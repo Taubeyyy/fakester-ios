@@ -39,6 +39,8 @@ ein React-Quelltext existiert nirgends mehr.
   `--accent #34d399`, `--destructive #f87171`, `--radius .875rem`). Welche Datei gerade gilt, sagt
   `grep -oE "assets/index-[A-Za-z0-9_-]+\.css" /var/www/fakester-beta/index.html`.
   `--acc` setzt die App zur Laufzeit auf die ausgerüstete Farbe, Vorgabe `#b15cff`.
+- **Der Aufbau jedes Bildschirms steht in `ios/Referenz-Weboberflaeche.md`** – aufgenommen durch
+  Durchspielen im Handyformat. Vom Handy aus ist das die einzige Quelle, es gibt dort keinen Browser.
 - **Die Farben sagen nichts über den Aufbau**, und der weicht am stärksten ab. Den gibt es nur
   durch Hinschauen: Seite im Handyformat (375×812) öffnen und durchspielen. Die Auflösung dauert
   nur `revealTime` (Vorgabe 5 s) – Runde auslaufen lassen und sofort knipsen, sonst ist sie weg.
