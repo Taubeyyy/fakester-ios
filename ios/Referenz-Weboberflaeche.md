@@ -110,6 +110,25 @@ Schiebt sich als Blatt über die abgeblendete Runde, dauert nur `revealTime` (5 
 
 ## Was es im Browser gibt und in der App nicht
 
-Create Game (Playlist einwerfen, Modus, Einstellungen), Timeline, Higher/Lower,
-Survival, Race, Shop, Path, Quests, Style, Board, Friends, Playlists, Settings,
-Daily, Emoji-Reaktionen in der Runde, „Share result" als Bild.
+Timeline, Higher/Lower, Survival, Race, Shop, Path, Quests, Style, Friends,
+Playlists, Settings, Daily, mehrere Playlists gemischt beim Erstellen,
+Lobby-Einstellungen nachträglich ändern, „Share result" als Bild.
+
+Seit 2026-10-04 in der App: **Create Game** (eine Playlist, nur Quiz-Modus),
+**Board** (Rangliste) und die **Emoji-Reaktionen** in der Runde.
+
+## Nachrichten, die der Browser schickt (aus dem Bundle, 2026-10-04)
+
+`create-game {…Einstellungen, isPublic, user}`, `join-game {pin, user}`, `start-game`,
+`leave-game`, `submit-guess {guess}`, `submit-timeline-guess {guess:{position}}`,
+`submit-hl-guess {direction}`, `player-ready`, `player-unready`, `return-to-lobby`,
+`send-chat {text}` (**nicht** `message` – das verwirft der Server still),
+`update-lobby-settings {…}`, `invite-friend {friendId, friendName}`,
+`suggest-playlist {url}`, `answer-suggestion {…, accept}`, `kick-player {targetId}`,
+`send-reaction {reaction}` → alle bekommen `player-reacted {playerId, nickname, reaction}`.
+
+REST (alles unter `/fakester`): `/playlists/featured`, `/playlist/info?url=`,
+`/playlist/test?url=` (Zeilen-JSON, gestreamt), `/leaderboard?sort=xp|wins|highscore|games|correct&limit=100`,
+`/daily`, `/daily/start`, `/daily/finish`, `/daily-checkin`, `/quests`, `/quests/claim`,
+`/shop/buy`, `/profile/equip`, `/friends`, `/friends/request`, `/friends/respond`,
+`/playlists/saved`, `/stats`, `/stats/live`. Der Gegenstandskatalog liegt unter `/catalog.json`.

@@ -30,7 +30,9 @@ struct RundenAnsicht: View {
                 .padding(.bottom, 16)
             }
             .scrollDismissesKeyboard(.interactively)
+            .overlay(alignment: .bottomTrailing) { ReaktionsWolke() }
 
+            ReaktionsLeiste()
             sperrknopf
         }
     }
@@ -344,5 +346,70 @@ struct WahlKnopf: View {
             form.fill(gewaehlt ? Farbe.akzent.opacity(0.22) : Farbe.flaeche)
             form.strokeBorder(gewaehlt ? Farbe.akzent : Farbe.linie, lineWidth: gewaehlt ? 1.5 : 1)
         }
+    }
+}
+
+// MARK: - Reaktionen
+
+/// Die fuenf runden Emoji-Knoepfe wie im Browser. Was man drueckt, sehen alle -
+/// der Server schickt es als `player-reacted` an jeden zurueck, auch an einen
+/// selbst, deshalb zeigt die App hier nichts vorab an.
+struct ReaktionsLeiste: View {
+    @EnvironmentObject private var spiel: Spiel
+    @State private var zuletzt = Date.distantPast
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(Reaktion.auswahl, id: \.self) { e in
+                Button {
+                    // Kleine Bremse, damit Dauerdruecken die Lobby nicht flutet.
+                    guard Date().timeIntervalSince(zuletzt) > 0.6 else { return }
+                    zuletzt = Date()
+                    Spuerbar.tipp()
+                    spiel.reagieren(e)
+                } label: {
+                    Text(e)
+                        .font(.system(size: 20))
+                        .frame(width: 42, height: 42)
+                        .background(Circle().fill(Farbe.flaeche))
+                        .overlay(Circle().strokeBorder(Farbe.kante, lineWidth: 1))
+                }
+                .buttonStyle(BubbleDruck())
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Capsule().fill(Farbe.grund.opacity(0.85)))
+        .overlay(Capsule().strokeBorder(Farbe.linie, lineWidth: 1))
+        .padding(.top, 6)
+        .padding(.bottom, 8)
+    }
+}
+
+/// Die Emojis, die gerade jemand geschickt hat - steigen rechts auf und gehen.
+struct ReaktionsWolke: View {
+    @EnvironmentObject private var spiel: Spiel
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 6) {
+            ForEach(spiel.reaktionen) { r in
+                HStack(spacing: 6) {
+                    Text(r.nickname)
+                        .font(.marke(11, .bold))
+                        .foregroundColor(Farbe.gedaempft)
+                        .lineLimit(1)
+                    Text(r.reaction).font(.system(size: 22))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(Farbe.flaeche.opacity(0.92)))
+                .overlay(Capsule().strokeBorder(Farbe.kante, lineWidth: 1))
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: spiel.reaktionen)
+        .padding(.trailing, 16)
+        .padding(.bottom, 8)
+        .allowsHitTesting(false)
     }
 }

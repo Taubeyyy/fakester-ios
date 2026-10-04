@@ -260,6 +260,37 @@ gleich("Startzaehler", lies(Umschlag<Zaehler>.self, Mitschnitt.countdown)?.paylo
 gleich("Startmeldung", lies(Umschlag<Startmeldung>.self, Mitschnitt.gameStarting)?.payload?.message, "Loading songs...")
 gleich("Beitrittszeile", lies(Umschlag<ChatZeile>.self, Mitschnitt.chatMessage)?.payload?.text, "ProtokollProbe joined")
 
+
+// MARK: - Neu: Spiel erstellen, Reaktionen, Bestenliste
+
+abschnitt("Spiel erstellen & Co. (Mitschnitt 2026-10-04)")
+let reakt = lies(Umschlag<Reaktion>.self, Mitschnitt.playerReacted)?.payload
+gleich("Reaktion: Emoji", reakt?.reaction, "😂")
+gleich("Reaktion: wer", reakt?.nickname, "TestBot")
+gleich("Spieler-Chatzeile", lies(Umschlag<ChatZeile>.self, Mitschnitt.chatSpieler)?.payload?.text, "hallo text")
+let info = lies(PlaylistInfo.self, Mitschnitt.playlistInfo)
+gleich("Playlist-ID", info?.id, "3cEYpjA9oz9GiPac4AsH4n")
+gleich("Playlist-Quelle", info?.source, "spotify")
+gleich("Playlist-Songs", info?.trackCount, 5)
+let empf = lies(EmpfohleneListen.self, Mitschnitt.featured)
+gleich("empfohlene Playlist", empf?.eintraege.first?.id, "2Jc0amXy2IvLyTofJKgiYg")
+let brett = lies(Bestenliste.self, Mitschnitt.leaderboard)
+gleich("Bestenliste: Eintraege", brett?.eintraege.count, 2)
+gleich("Bestenliste: Platz 1", brett?.eintraege.first?.name, "Taubey")
+gleich("Bestenliste: Wert", brett?.eintraege.first?.wert, 29841)
+gleich("Bestenliste: Konto-ID als Zahl", brett?.eintraege.last?.id, "33")
+
+var vorgabe = SpielVorgabe()
+pruefe("ohne Playlist nichts zu senden", vorgabe.nutzlast() == nil)
+vorgabe.playlist = info?.eintrag
+vorgabe.titel = false; vorgabe.interpret = false; vorgabe.jahr = false
+gleich("nichts gewaehlt heisst Titel", vorgabe.rateArten, ["title"])
+vorgabe.freitext = true
+let last = vorgabe.nutzlast()
+gleich("Freitext heisst freestyle", last?["answerType"] as? String, "freestyle")
+gleich("Playlist-ID in der Nutzlast", last?["playlistId"] as? String, "3cEYpjA9oz9GiPac4AsH4n")
+pruefe("Nutzlast ist gueltiges JSON", last.map { JSONSerialization.isValidJSONObject($0) } ?? false)
+
 // MARK: -
 
 print("\n\(geprueft) geprueft, \(fehler) fehlgeschlagen")

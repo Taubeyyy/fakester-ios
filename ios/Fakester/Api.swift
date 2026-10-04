@@ -188,11 +188,33 @@ final class Api: ObservableObject {
         }
     }
 
+    // MARK: - Lesen ohne Seiteneffekt
+
+    /// GET mit Abfrage, z. B. `/leaderboard?sort=xp`. Das Token geht mit, wenn
+    /// es eins gibt - die Endpunkte hier gehen aber auch fuer Gaeste.
+    func holen<T: Decodable>(_ pfad: String, _ abfrage: [String: String] = [:]) async throws -> T {
+        try await ruf(pfad, methode: "GET", koerper: nil, mitToken: token != nil, abfrage: abfrage)
+    }
+
     // MARK: - Unterbau
 
     private func ruf<T: Decodable>(_ pfad: String, methode: String,
-                                   koerper: [String: String]?, mitToken: Bool) async throws -> T {
-        var anfrage = URLRequest(url: Api.basis.appendingPathComponent(pfad.hasPrefix("/") ? String(pfad.dropFirst()) : pfad))
+                                   koerper: [String: String]?, mitToken: Bool,
+                                   abfrage: [String: String] = [:]) async throws -> T {
+        var adresse: URL = Api.basis.appendingPathComponent(pfad.hasPrefix("/") ? String(pfad.dropFirst()) : pfad)
+        if !abfrage.isEmpty, var teile = URLComponents(url: adresse, resolvingAgainstBaseURL: false) {
+            // Selbst kodiert: URLComponents laesst & und = in Werten stehen, und
+            // ein Spotify-Link mit "?si=…" zerfiele dann in zwei Parameter.
+            var erlaubt = CharacterSet.alphanumerics
+            erlaubt.insert(charactersIn: "-._~")
+            let paare: [String] = abfrage.keys.sorted().map { k in
+                let v: String = abfrage[k] ?? ""
+                return k + "=" + (v.addingPercentEncoding(withAllowedCharacters: erlaubt) ?? v)
+            }
+            teile.percentEncodedQuery = paare.joined(separator: "&")
+            if let u = teile.url { adresse = u }
+        }
+        var anfrage = URLRequest(url: adresse)
         anfrage.httpMethod = methode
         anfrage.timeoutInterval = 20
         anfrage.setValue("application/json", forHTTPHeaderField: "Content-Type")

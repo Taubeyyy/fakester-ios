@@ -5,7 +5,8 @@ import SwiftUI
 /// neben einem schmalen "Join", darunter Daily, die vier farbigen Kacheln, die
 /// vier ruhigen Knoepfe, die Stufenkarte und der Fuss.
 ///
-/// Die Kacheln fuehren in der App noch nirgends hin. Sie trotzdem zu zeigen ist
+/// "Create Game" und "Board" fuehren in eigene Bildschirme. Die uebrigen
+/// Kacheln fuehren in der App noch nirgends hin. Sie trotzdem zu zeigen ist
 /// Absicht - wer die Webseite kennt, soll sich sofort zurechtfinden, und ein
 /// Tipp sagt ehrlich, dass es das hier noch nicht gibt.
 struct DaheimAnsicht: View {
@@ -14,6 +15,8 @@ struct DaheimAnsicht: View {
 
     @State private var pin = ""
     @State private var beitreten = false
+    @State private var erstellen = false
+    @State private var rangliste = false
 
     var body: some View {
         // Der Startbildschirm passt im Browser auf einen Bildschirm, und genau
@@ -44,6 +47,17 @@ struct DaheimAnsicht: View {
                 .frame(minHeight: geo.size.height - 24, alignment: .top)
             }
             .scrollDismissesKeyboard(.interactively)
+        }
+        .fullScreenCover(isPresented: $erstellen) {
+            ErstellenAnsicht()
+                .environmentObject(api)
+                .environmentObject(spiel)
+                .preferredColorScheme(.dark)
+        }
+        .fullScreenCover(isPresented: $rangliste) {
+            RanglistenAnsicht()
+                .environmentObject(api)
+                .preferredColorScheme(.dark)
         }
     }
 
@@ -77,7 +91,8 @@ struct DaheimAnsicht: View {
     private var spielknoepfe: some View {
         HStack(spacing: 10) {
             Button {
-                nurImBrowser(L("Spiel erstellen", "Creating a game"))
+                Spuerbar.tipp()
+                erstellen = true
             } label: {
                 Label(L("Spiel erstellen", "Create Game"), systemImage: "play.fill")
             }
@@ -127,7 +142,14 @@ struct DaheimAnsicht: View {
         let spalten: [GridItem] = [GridItem(.flexible(), spacing: 9), GridItem(.flexible(), spacing: 9)]
         return LazyVGrid(columns: spalten, spacing: 9) {
             ForEach(Kachel.ruhige) { k in
-                FlachKnopf(name: k.name, symbol: k.symbol, eng: eng) { nurImBrowser(k.name) }
+                FlachKnopf(name: k.name, symbol: k.symbol, eng: eng) {
+                    if k.id == "board" {
+                        Spuerbar.tipp()
+                        rangliste = true
+                    } else {
+                        nurImBrowser(k.name)
+                    }
+                }
             }
         }
     }

@@ -34,6 +34,9 @@ final class Spiel: NSObject, ObservableObject {
     @Published private(set) var ergebnis: RundenErgebnis?
     @Published private(set) var endstand: Endstand?
     @Published private(set) var chat: [ChatZeile] = []
+    /// Emoji-Reaktionen, die gerade ueber den Bildschirm schweben. Jede geht
+    /// nach ein paar Sekunden von selbst.
+    @Published private(set) var reaktionen: [Reaktion] = []
 
     @Published private(set) var ladetext: String = ""
     @Published private(set) var ladestand: LadeStand?
@@ -65,6 +68,10 @@ final class Spiel: NSObject, ObservableObject {
     private var sitzung: URLSession?
     private var draht: URLSessionWebSocketTask?
     private var ausweis: SpielerAusweis?
+    /// Wartet darauf, beim naechsten Verbinden als `create-game` rauszugehen.
+    /// Danach ist sie weg - ein Neuverbinden tritt der PIN bei, statt eine
+    /// zweite Lobby aufzumachen.
+    private var erstellung: [String: Any]?
     private var willVerbunden = false        // absichtlich drin? Dann neu verbinden.
     private var versuche = 0
     private var klopfer: Timer?
@@ -82,8 +89,21 @@ final class Spiel: NSObject, ObservableObject {
         verbinden()
     }
 
+    /// Eigenes Spiel aufmachen. Die PIN kommt mit dem ersten `lobby-update`.
+    func erstellen(_ vorgabe: [String: Any], als wer: SpielerAusweis) {
+        self.pin = ""
+        self.ausweis = wer
+        self.eigeneId = wer.id
+        self.erstellung = vorgabe
+        self.willVerbunden = true
+        self.versuche = 0
+        lage = .verbinde
+        verbinden()
+    }
+
     func verlassen() {
         willVerbunden = false
+        erstellung = nil
         schick("leave-game", [:])
         abbauen()
         lage = .getrennt
@@ -93,6 +113,7 @@ final class Spiel: NSObject, ObservableObject {
         ergebnis = nil
         endstand = nil
         chat = []
+        reaktionen = []
         // Muss mit weg, sonst steht der Hinweis beim naechsten Mal sofort
         // wieder da - er haengt an diesem Wert, nicht an einem Knopf.
         rauswurf = nil
@@ -165,6 +186,12 @@ final class Spiel: NSObject, ObservableObject {
             // Nur angemeldete Spieler sind fuer Freunde sichtbar.
             schick("register-online", ["userId": a.id, "username": a.username])
         }
+        if var neu = erstellung, pin.isEmpty {
+            erstellung = nil
+            neu["user"] = wer
+            schick("create-game", neu)
+            return
+        }
         schick("join-game", ["pin": pin, "user": wer])
     }
 
@@ -198,7 +225,14 @@ final class Spiel: NSObject, ObservableObject {
     func schreiben(_ text: String) {
         let sauber = text.trimmingCharacters(in: .whitespaces)
         guard !sauber.isEmpty else { return }
-        schick("send-chat", ["message": sauber])
+        // ⚠️ `text`, nicht `message`: mit `message` verwirft der Server die
+        // Zeile still (im Mitschnitt vom 2026-10-04 nachgeprueft).
+        schick("send-chat", ["text": sauber])
+    }
+
+    /// Emoji an alle in der Lobby/Runde.
+    func reagieren(_ emoji: String) {
+        schick("send-reaction", ["reaction": emoji])
     }
 
     // MARK: - Empfangen
@@ -312,8 +346,25 @@ final class Spiel: NSObject, ObservableObject {
                 if chat.count > 80 { chat.removeFirst(chat.count - 80) }
             }
 
+        case "player-reacted":
+            guard let r = lies(Reaktion.self), !r.reaction.isEmpty else { return }
+            reaktionen.append(r)
+            if reaktionen.count > 12 { reaktionen.removeFirst(reaktionen.count - 12) }
+            let weg: UUID = r.id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) { [weak self] in
+                self?.reaktionen.removeAll { $0.id == weg }
+            }
+
         case "toast":
-            if let h = lies(Hinweis.self), !h.message.isEmpty { meldung = h.message }
+            guard let h = lies(Hinweis.self) else { return }
+            if !h.message.isEmpty { meldung = h.message }
+            // Ein Fehler, bevor es ueberhaupt eine PIN gibt, heisst: das
+            // Erstellen ist gescheitert. Sonst haengt man ewig bei "Verbinde…".
+            if h.isError && pin.isEmpty && lage == .verbinde {
+                willVerbunden = false
+                abbauen()
+                lage = .getrennt
+            }
 
         case "kicked":
             rauswurf = lies(Rauswurf.self)
