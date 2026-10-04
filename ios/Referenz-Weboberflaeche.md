@@ -28,7 +28,21 @@ welches gerade gilt sagt `grep -oE "assets/index-[A-Za-z0-9_-]+\.css" /var/www/f
 die Akzentfarbe setzt die App auf den ausgerüsteten Gegenstand. Vorgabe ist das
 kräftige Lila `#b15cff` – das ist das, was man sieht.
 
-Schriften: **Bricolage Grotesque** für alles, **DM Mono** für PIN, Punkte und Zeiten.
+Schrift: **Helvetica** (auf dem iPhone). Das Bundle verlangt „Bricolage Grotesque“ / „DM Sans“,
+deklariert sie aber als „… Variable“ – geladen wird nichts, es greift `sans-serif`. Wo Tailwinds
+`system-ui` gilt (Auflösungsblatt, Gast-Hinweis), ist es San Francisco. Keine Monospace-Schrift.
+
+Gemessene Grundwerte (CSS-px = Punkte):
+
+| Was | Wert |
+|---|---|
+| Hintergrund | `#07070e`, Punkteraster 26 px (1 px weiß 4 %), Flecken: lila `#7000d7` 600 px oben links (28 %, blur 90), grün `#065f46` 520 px unten rechts (20 %), magenta `#a21caf` 280 px Mitte (12 %) |
+| Karte | `rgba(24,23,39,.92)`, Rand weiß 7 % oder lila `rgba(177,92,255,.22–.3)`, Ecken 16 (Anmeldekarte 24) |
+| Hauptknopf | `#b15cff` flach, Schrift weiß 15 fett, Ecken 16, Höhe 50–55, Schatten `0 8 24 rgba(112,0,215,.3)` + heller Innenstrich oben |
+| Nebenknopf („Join“) | `rgba(20,18,38,.75)`, Rand weiß 9 %, Schrift `#d8d7ee` 14 halbfett |
+| Leave | Pille `rgba(239,68,68,.1)`, Rand `.3`, Schrift `#f87171` 11 fett |
+| Etiketten | 10 fett, 1 px gesperrt, Großbuchstaben, `#8d8ba4` |
+| Antwortknopf | `rgba(255,255,255,.04)`, Rand weiß 8 %, Ecken 18, Schrift 12 halbfett `#b0aed2` |
 
 ## Anmelden
 
@@ -110,6 +124,28 @@ Schiebt sich als Blatt über die abgeblendete Runde, dauert nur `revealTime` (5 
 
 ## Was es im Browser gibt und in der App nicht
 
-Create Game (Playlist einwerfen, Modus, Einstellungen), Timeline, Higher/Lower,
-Survival, Race, Shop, Path, Quests, Style, Board, Friends, Playlists, Settings,
-Daily, Emoji-Reaktionen in der Runde, „Share result" als Bild.
+Timeline, Higher/Lower, Survival, Race, Shop, Path, Style, Friends, Quest-Awards,
+Playlists, Settings, Daily, mehrere Playlists gemischt beim Erstellen,
+Lobby-Einstellungen nachträglich ändern, „Share result" als Bild.
+
+Seit 2026-10-04 in der App: **Create Game** (eine Playlist, nur Quiz-Modus),
+**Board** (Rangliste) und die **Emoji-Reaktionen** in der Runde.
+Danach dazu: **online-Zahl** (`/stats/live`, alle 30 s), **Quests** (Daily/Weekly/Milestones,
+ohne Awards), **tägliche Belohnung** (`/daily-checkin`) und für Gäste der Hinweis
+„That one needs an account" auf allem außer der Rangliste – genau wie im Browser.
+
+## Nachrichten, die der Browser schickt (aus dem Bundle, 2026-10-04)
+
+`create-game {…Einstellungen, isPublic, user}`, `join-game {pin, user}`, `start-game`,
+`leave-game`, `submit-guess {guess}`, `submit-timeline-guess {guess:{position}}`,
+`submit-hl-guess {direction}`, `player-ready`, `player-unready`, `return-to-lobby`,
+`send-chat {text}` (**nicht** `message` – das verwirft der Server still),
+`update-lobby-settings {…}`, `invite-friend {friendId, friendName}`,
+`suggest-playlist {url}`, `answer-suggestion {…, accept}`, `kick-player {targetId}`,
+`send-reaction {reaction}` → alle bekommen `player-reacted {playerId, nickname, reaction}`.
+
+REST (alles unter `/fakester`): `/playlists/featured`, `/playlist/info?url=`,
+`/playlist/test?url=` (Zeilen-JSON, gestreamt), `/leaderboard?sort=xp|wins|highscore|games|correct&limit=100`,
+`/daily`, `/daily/start`, `/daily/finish`, `/daily-checkin`, `/quests`, `/quests/claim`,
+`/shop/buy`, `/profile/equip`, `/friends`, `/friends/request`, `/friends/respond`,
+`/playlists/saved`, `/stats`, `/stats/live`. Der Gegenstandskatalog liegt unter `/catalog.json`.

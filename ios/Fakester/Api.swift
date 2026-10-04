@@ -1,56 +1,56 @@
 import Foundation
 
-/// REST-Teil von fakester.app: anmelden, registrieren, Profil holen.
+/// The REST side of fakester.app: log in, register, fetch the profile.
 ///
-/// Alles unter `https://fakester.app/fakester` - der Express-Router haengt dort,
-/// nicht unter `/api`, auch wenn der Pfad das nahelegen wuerde. Das Spiel selbst
-/// laeuft nicht hierueber, sondern ueber die WebSocket in `Verbindung.swift`.
+/// Everything lives under `https://fakester.app/fakester` - the Express router is
+/// mounted there, not under `/api`, even if the path suggests otherwise. The game
+/// itself doesn't run through here but through the WebSocket in `Connection.swift`.
 @MainActor
 final class Api: ObservableObject {
     static let shared = Api()
 
-    static let basis = URL(string: "https://fakester.app/fakester")!
+    static let baseURL = URL(string: "https://fakester.app/fakester")!
 
-    /// Token und Spielername ueberleben den Appstart. Mehr wird nicht
-    /// gespeichert - alles andere holt das Profil frisch, sonst zeigt die App
-    /// Spots und Rang von vorgestern.
+    /// Token and player name survive an app restart. Nothing else is stored -
+    /// everything else comes fresh from the profile, otherwise the app would
+    /// show spots and rank from the day before yesterday.
     @Published private(set) var token: String?
-    @Published private(set) var ich: Konto?
-    /// Gaeste haben kein Konto. Der Ausweis wird einmal gebaut und behalten,
-    /// damit ein Neustart in derselben Lobby nicht als zweiter Spieler landet.
-    @Published private(set) var gast: SpielerAusweis?
+    @Published private(set) var me: Account?
+    /// Guests have no account. The identity is built once and kept, so a
+    /// restart in the same lobby doesn't show up as a second player.
+    @Published private(set) var guest: PlayerIdentity?
 
-    private let ablage = UserDefaults.standard
+    private let store = UserDefaults.standard
 
     private init() {
-        token = ablage.string(forKey: "api.token")
-        if let d = ablage.data(forKey: "api.ich") {
-            ich = try? JSONDecoder().decode(Konto.self, from: d)
+        token = store.string(forKey: "api.token")
+        if let d = store.data(forKey: "api.ich") {
+            me = try? JSONDecoder().decode(Account.self, from: d)
         }
-        if let id = ablage.string(forKey: "gast.id"), let name = ablage.string(forKey: "gast.name") {
-            gast = SpielerAusweis(id: id, username: name, isGuest: true)
+        if let id = store.string(forKey: "gast.id"), let name = store.string(forKey: "gast.name") {
+            guest = PlayerIdentity(id: id, username: name, isGuest: true)
         }
     }
 
-    var angemeldet: Bool { token != nil && ich != nil }
+    var isLoggedIn: Bool { token != nil && me != nil }
 
-    /// Wer sitzt am Tisch - Konto oder Gast. Genau das verlangen `create-game`
-    /// und `join-game`.
-    var ausweis: SpielerAusweis? {
-        if let k = ich {
-            return SpielerAusweis(id: String(k.id.text), username: k.username, isGuest: false,
+    /// Who is at the table - account or guest. Exactly what `create-game`
+    /// and `join-game` expect.
+    var identity: PlayerIdentity? {
+        if let k = me {
+            return PlayerIdentity(id: String(k.id.text), username: k.username, isGuest: false,
                                   is_pro: k.is_pro, is_admin: k.is_admin,
                                   equipped_icon_id: k.equipped_icon_id ?? 1,
                                   equipped_title_id: k.equipped_title_id ?? 1,
                                   avatar_url: k.avatar_url, equipped_emoji: k.equipped_emoji)
         }
-        return gast
+        return guest
     }
 
-    // MARK: - Konto
+    // MARK: - Account
 
-    struct Konto: Codable {
-        let id: Lose
+    struct Account: Codable {
+        let id: LooseValue
         let username: String
         var xp: Int?
         var spots: Int?
@@ -72,7 +72,7 @@ final class Api: ObservableObject {
         }
         init(from d: Decoder) throws {
             let c = try d.container(keyedBy: CodingKeys.self)
-            id = try c.decode(Lose.self, forKey: .id)
+            id = try c.decode(LooseValue.self, forKey: .id)
             username = (try? c.decode(String.self, forKey: .username)) ?? "?"
             xp = try? c.decode(Int.self, forKey: .xp)
             spots = try? c.decode(Int.self, forKey: .spots)
@@ -89,139 +89,175 @@ final class Api: ObservableObject {
         }
     }
 
-    /// Die Form, in der der Server eine Absage begruendet.
-    private struct Absage: Decodable { let error: String? }
+    /// The shape in which the server explains a refusal.
+    private struct ErrorReply: Decodable { let error: String? }
 
-    /// Stufe und Fortschritt, genau wie der Server rechnet:
+    /// Level and progress, computed exactly like the server does:
     /// `levelForXp(xp) = max(1, floor((25 + sqrt(625 + 100*xp)) / 50))`.
-    /// Nachgebaut statt geschaetzt - eine Stufe, die in der App anders steht
-    /// als im Browser, ist schlimmer als gar keine.
-    enum Stufe {
-        static func fuerXp(_ xp: Int) -> Int {
+    /// Replicated rather than estimated - a level that differs between the app
+    /// and the browser is worse than none at all.
+    enum Level {
+        static func forXP(_ xp: Int) -> Int {
             max(1, Int((25.0 + (625.0 + 100.0 * Double(max(0, xp))).squareRoot()) / 50.0))
         }
 
-        /// Ab wie viel XP diese Stufe beginnt - die Umkehrung der Formel oben.
-        static func xpAb(_ stufe: Int) -> Int {
-            let g = 50.0 * Double(stufe) - 25.0
+        /// The XP at which this level starts - the inverse of the formula above.
+        static func minXP(_ level: Int) -> Int {
+            let g = 50.0 * Double(level) - 25.0
             return max(0, Int((g * g - 625.0) / 100.0))
         }
 
-        /// Anteil 0…1 innerhalb der laufenden Stufe.
-        static func anteil(xp: Int) -> Double {
-            let l = fuerXp(xp)
-            let von = xpAb(l), bis = xpAb(l + 1)
-            guard bis > von else { return 0 }
-            return min(1, max(0, Double(xp - von) / Double(bis - von)))
+        /// Fraction 0…1 within the current level.
+        static func fraction(xp: Int) -> Double {
+            let l = forXP(xp)
+            let lowerXP = minXP(l), upperXP = minXP(l + 1)
+            guard upperXP > lowerXP else { return 0 }
+            return min(1, max(0, Double(xp - lowerXP) / Double(upperXP - lowerXP)))
         }
     }
 
-    enum Fehler: LocalizedError {
-        case meldung(String)
+    enum RequestError: LocalizedError {
+        case notice(String)
         var errorDescription: String? {
-            if case .meldung(let m) = self { return m }
+            if case .notice(let m) = self { return m }
             return nil
         }
     }
 
-    // MARK: - Anmelden
+    // MARK: - Login
 
-    private struct AnmeldeAntwort: Decodable {
+    private struct LoginResponse: Decodable {
         let token: String?
-        let user: Konto?
+        let user: Account?
     }
 
-    func anmelden(name: String, passwort: String) async throws {
-        try await anmeldung("/auth/login", name: name, passwort: passwort)
+    func logIn(name: String, passwordText: String) async throws {
+        try await authenticate("/auth/login", name: name, passwordText: passwordText)
     }
 
-    func registrieren(name: String, passwort: String) async throws {
-        try await anmeldung("/auth/register", name: name, passwort: passwort)
+    func register(name: String, passwordText: String) async throws {
+        try await authenticate("/auth/register", name: name, passwordText: passwordText)
     }
 
-    private func anmeldung(_ pfad: String, name: String, passwort: String) async throws {
-        let antwort: AnmeldeAntwort = try await ruf(
-            pfad, methode: "POST",
-            koerper: ["username": name.trimmingCharacters(in: .whitespaces), "password": passwort],
-            mitToken: false)
-        guard let t = antwort.token, let u = antwort.user else {
-            throw Fehler.meldung(L("Der Server hat keine Anmeldung zurückgeschickt.", "The server didn't send back a login."))
+    private func authenticate(_ path: String, name: String, passwordText: String) async throws {
+        let answer: LoginResponse = try await perform(
+            path, method: "POST",
+            jsonBody: ["username": name.trimmingCharacters(in: .whitespaces), "password": passwordText],
+            withToken: false)
+        guard let t = answer.token, let u = answer.user else {
+            throw RequestError.notice("The server didn't send back a login.")
         }
         token = t
-        ich = u
-        ablage.set(t, forKey: "api.token")
-        ablage.set(try? JSONEncoder().encode(u), forKey: "api.ich")
+        me = u
+        store.set(t, forKey: "api.token")
+        store.set(try? JSONEncoder().encode(u), forKey: "api.ich")
     }
 
-    /// Raeumt beides ab - Konto UND Gast. Ohne das Zweite stuende ein Gast nach
-    /// dem Abmelden sofort wieder mit demselben Namen da, weil der Ausweis die
-    /// Anmeldung gar nicht braucht.
-    func abmelden() {
+    /// Clears both - account AND guest. Without the latter, a guest would be
+    /// back with the same name right after logging out, because the identity
+    /// doesn't need a login at all.
+    func logOut() {
         token = nil
-        ich = nil
-        gast = nil
-        ablage.removeObject(forKey: "api.token")
-        ablage.removeObject(forKey: "api.ich")
-        ablage.removeObject(forKey: "gast.id")
-        ablage.removeObject(forKey: "gast.name")
+        me = nil
+        guest = nil
+        store.removeObject(forKey: "api.token")
+        store.removeObject(forKey: "api.ich")
+        store.removeObject(forKey: "gast.id")
+        store.removeObject(forKey: "gast.name")
     }
 
-    /// Gast bleibt Gast, bis er einen anderen Namen waehlt.
-    func alsGast(name: String) {
-        let sauber = name.trimmingCharacters(in: .whitespaces)
-        if let g = gast, g.username == sauber { return }
-        let neu = SpielerAusweis.gast(name: sauber)
-        gast = neu
-        ablage.set(neu.id, forKey: "gast.id")
-        ablage.set(neu.username, forKey: "gast.name")
+    /// A guest stays the same guest until they pick a different name.
+    func playAsGuest(name: String) {
+        let cleaned = name.trimmingCharacters(in: .whitespaces)
+        if let g = guest, g.username == cleaned { return }
+        let latest = PlayerIdentity.guest(name: cleaned)
+        guest = latest
+        store.set(latest.id, forKey: "gast.id")
+        store.set(latest.username, forKey: "gast.name")
     }
 
-    // MARK: - Profil
+    // MARK: - Profile
 
-    func profilAuffrischen() async {
+    func refreshProfile() async {
         guard token != nil else { return }
-        struct Profil: Decodable { let user: Konto? }
-        if let p: Profil = try? await ruf("/profile", methode: "GET", koerper: nil, mitToken: true),
+        struct ProfileResponse: Decodable { let user: Account? }
+        if let p: ProfileResponse = try? await perform("/profile", method: "GET", jsonBody: nil, withToken: true),
            let u = p.user {
-            ich = u
-            ablage.set(try? JSONEncoder().encode(u), forKey: "api.ich")
+            me = u
+            store.set(try? JSONEncoder().encode(u), forKey: "api.ich")
         }
     }
 
-    // MARK: - Unterbau
+    // MARK: - Reads without side effects
 
-    private func ruf<T: Decodable>(_ pfad: String, methode: String,
-                                   koerper: [String: String]?, mitToken: Bool) async throws -> T {
-        var anfrage = URLRequest(url: Api.basis.appendingPathComponent(pfad.hasPrefix("/") ? String(pfad.dropFirst()) : pfad))
-        anfrage.httpMethod = methode
-        anfrage.timeoutInterval = 20
-        anfrage.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if mitToken, let t = token {
-            anfrage.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization")
+    /// GET with a query, e.g. `/leaderboard?sort=xp`. The token is sent if
+    /// there is one - but these endpoints work for guests too.
+    func fetch<T: Decodable>(_ path: String, _ query: [String: String] = [:]) async throws -> T {
+        try await perform(path, method: "GET", jsonBody: nil, withToken: token != nil, query: query)
+    }
+
+    /// POST with an account (claiming quests, daily reward).
+    func transmit<T: Decodable>(_ path: String, _ jsonBody: [String: String] = [:]) async throws -> T {
+        try await perform(path, method: "POST", jsonBody: jsonBody, withToken: true)
+    }
+
+    /// After claiming, the server sends the new spots balance - it should show
+    /// top right immediately, not only after the next profile fetch.
+    func setSpots(_ latest: Int) {
+        guard var k = me else { return }
+        k.spots = latest
+        me = k
+        store.set(try? JSONEncoder().encode(k), forKey: "api.ich")
+    }
+
+    // MARK: - Plumbing
+
+    private func perform<T: Decodable>(_ path: String, method: String,
+                                   jsonBody: [String: String]?, withToken: Bool,
+                                   query: [String: String] = [:]) async throws -> T {
+        var address: URL = Api.baseURL.appendingPathComponent(path.hasPrefix("/") ? String(path.dropFirst()) : path)
+        if !query.isEmpty, var components = URLComponents(url: address, resolvingAgainstBaseURL: false) {
+            // Encoded by hand: URLComponents leaves & and = in values as they are,
+            // and a Spotify link with "?si=…" would then split into two parameters.
+            var allowed = CharacterSet.alphanumerics
+            allowed.insert(charactersIn: "-._~")
+            let pairs: [String] = query.keys.sorted().map { k in
+                let v: String = query[k] ?? ""
+                return k + "=" + (v.addingPercentEncoding(withAllowedCharacters: allowed) ?? v)
+            }
+            components.percentEncodedQuery = pairs.joined(separator: "&")
+            if let u = components.url { address = u }
         }
-        if let k = koerper {
-            anfrage.httpBody = try JSONSerialization.data(withJSONObject: k)
+        var request = URLRequest(url: address)
+        request.httpMethod = method
+        request.timeoutInterval = 20
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if withToken, let t = token {
+            request.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization")
+        }
+        if let k = jsonBody {
+            request.httpBody = try JSONSerialization.data(withJSONObject: k)
         }
 
-        let (daten, antwort): (Data, URLResponse)
+        let (bytes, answer): (Data, URLResponse)
         do {
-            (daten, antwort) = try await URLSession.shared.data(for: anfrage)
+            (bytes, answer) = try await URLSession.shared.data(for: request)
         } catch {
-            throw Fehler.meldung(L("Keine Verbindung zum Server.", "No connection to the server."))
+            throw RequestError.notice("No connection to the server.")
         }
 
-        let code = (antwort as? HTTPURLResponse)?.statusCode ?? 0
+        let code = (answer as? HTTPURLResponse)?.statusCode ?? 0
         if !(200..<300).contains(code) {
-            // Der Server begruendet seine Absagen - die Begruendung ist
-            // brauchbarer als ein Statuscode ("Wrong login details", der
-            // Bann-Text mitsamt Restzeit).
-            let grund = (try? JSONDecoder().decode(Absage.self, from: daten))?.error
-            throw Fehler.meldung(grund ?? L("Der Server hat abgelehnt (\(code)).", "The server refused (\(code))."))
+            // The server explains its refusals - the explanation is more useful
+            // than a status code ("Wrong login details", the ban text including
+            // the time left).
+            let base = (try? JSONDecoder().decode(ErrorReply.self, from: bytes))?.error
+            throw RequestError.notice(base ?? "The server refused (\(code)).")
         }
         do {
-            return try JSONDecoder().decode(T.self, from: daten)
+            return try JSONDecoder().decode(T.self, from: bytes)
         } catch {
-            throw Fehler.meldung(L("Antwort des Servers nicht lesbar.", "Couldn't read the server's response."))
+            throw RequestError.notice("Couldn't read the server's response.")
         }
     }
 }
