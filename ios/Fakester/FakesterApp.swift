@@ -16,8 +16,8 @@ struct FakesterApp: App {
     }
 }
 
-/// Entscheidet, welcher Bildschirm dran ist. Die Lage kommt vom Server - die
-/// App haelt keine eigene Meinung darueber, in welchem Teil des Spiels man ist.
+/// Decides which screen is up. The state comes from the server - the app has
+/// no opinion of its own about which part of the game you are in.
 struct RootView: View {
     @EnvironmentObject private var api: Api
     @EnvironmentObject private var game: Game
@@ -29,8 +29,8 @@ struct RootView: View {
             currentScreen
         }
         .animation(.easeInOut(duration: 0.22), value: game.currentPhase)
-        // Der Server redet mit kurzen Hinweisen ("Game not found!"), und die
-        // gehen sonst unter.
+        // The server talks in short notices ("Game not found!"), which would
+        // otherwise get lost.
         .overlay(alignment: .top) { ToastBanner() }
         .alert("Kicked", isPresented: .constant(game.kick != nil)) {
             Button("Ok") { game.leave() }
@@ -47,7 +47,7 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             Task { await Updater.shared.checkForUpdate() }
         }
-        // Schuetteln = Feedback an den Entwickler, egal wo
+        // Shake = feedback to the developer, from anywhere
         .onReceive(NotificationCenter.default.publisher(for: .deviceShaken)) { _ in feedbackOpen = true }
         .sheet(isPresented: $feedbackOpen) {
             FeedbackSheet(currentScreen: "\(game.currentPhase)")
@@ -111,7 +111,7 @@ struct WaitingView: View {
     }
 }
 
-/// Kurzer Hinweis oben, der von selbst wieder geht.
+/// Short notice at the top that goes away by itself.
 struct ToastBanner: View {
     @EnvironmentObject private var game: Game
 

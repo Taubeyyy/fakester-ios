@@ -2,15 +2,15 @@ import AVFoundation
 import UIKit
 import Combine
 
-/// Der Vorschau-Schnipsel einer Runde.
+/// The preview clip of a round.
 ///
-/// Die Schnipsel kommen von Apple oder Deezer und sind rund 30 Sekunden lang -
-/// genau das, was der Server als `previewUrl` mitschickt.
+/// The clips come from Apple or Deezer and are about 30 seconds long -
+/// exactly what the server sends as `previewUrl`.
 ///
-/// Der Fortschritt wird mitgefuehrt, weil die Abspielkarte im Browser ihn zeigt,
-/// und weil sie damit etwas Nuetzliches tut: sie beweist, dass Ton kommt. Ohne
-/// diesen Beweis sitzt jemand mit stummgeschaltetem Geraet vor einer Runde und
-/// haelt das Spiel fuer kaputt.
+/// Progress is tracked because the player card in the browser shows it, and
+/// because that does something useful: it proves that sound is playing. Without
+/// that proof, someone with a muted device sits through a round and thinks the
+/// game is broken.
 final class AudioPlayer: ObservableObject {
     static let instance = AudioPlayer()
 
@@ -28,34 +28,34 @@ final class AudioPlayer: ObservableObject {
     private var timeObserver: Any?
 
     private init() {
-        // `.playback` ist hier richtig und nicht `.ambient`: in einem Musikspiel
-        // ist der Ton nicht Beiwerk, sondern die Frage. Wer den Klingelton-
-        // schalter umgelegt hat, soll trotzdem hoeren, was laeuft.
-        // Zusammen mit UIBackgroundModes:[audio] laeuft es auch weiter, wenn
-        // zwischendurch jemand eine Nachricht liest.
+        // `.playback` is right here, not `.ambient`: in a music game the sound
+        // isn't decoration, it is the question. Someone who flipped the ring/
+        // silent switch should still hear what is playing.
+        // Together with UIBackgroundModes:[audio] it also keeps playing while
+        // someone reads a message in between.
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
         try? AVAudioSession.sharedInstance().setActive(true)
     }
 
     func playPreview(_ address: String?) {
         guard let address, let url = URL(string: address) else { stop(); return }
-        // Dieselbe Runde noch einmal gemeldet (Wiederverbindung) soll den Song
-        // nicht von vorn anfangen lassen - die anderen sind ja weiter.
+        // The same round reported again (reconnect) must not restart the song
+        // from the beginning - everyone else is already further along.
         if address == previous, player?.timeControlStatus == .playing { return }
         cleanUp()
         previous = address
 
         let p = AVPlayer(url: url)
-        p.automaticallyWaitsToMinimizeStalling = false   // lieber sofort als sauber gepuffert
+        p.automaticallyWaitsToMinimizeStalling = false   // rather instant than cleanly buffered
         player = p
         elapsed = 0
         length = 0
-        // Viermal die Sekunde reicht fuer einen Balken und kostet fast nichts.
+        // Four times a second is enough for a progress bar and costs almost nothing.
         timeObserver = p.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main
         ) { [weak self] t in
-            // queue: .main - laeuft also schon auf der Hauptschlange, genau da,
-            // wo @Published hingehoert.
+            // queue: .main - so this already runs on the main queue, exactly
+            // where @Published belongs.
             guard let self else { return }
             self.elapsed = t.seconds
             if let d = p.currentItem?.duration.seconds, d.isFinite, d > 0 { self.length = d }
@@ -65,9 +65,9 @@ final class AudioPlayer: ObservableObject {
         isRunning = true
     }
 
-    /// Anhalten und weiterlaufen lassen - mehr kann der Knopf im Browser auch nicht.
-    /// Absichtlich kein Zurueckspulen: der Schnipsel laeuft fuer alle gleich, und
-    /// wer ihn neu starten koennte, haette mehr Zeit zum Hinhoeren als die anderen.
+    /// Pause and resume - the button in the browser can't do more either.
+    /// Deliberately no rewinding: the clip runs the same for everyone, and whoever
+    /// could restart it would get more listening time than the others.
     func flip() {
         guard let p = player else { return }
         if p.timeControlStatus == .playing { p.pause(); isRunning = false }
@@ -89,8 +89,8 @@ final class AudioPlayer: ObservableObject {
     }
 }
 
-/// Kurze Rueckmeldung in die Hand. Auf einer Webseite gibt es das nicht, und
-/// genau solche Kleinigkeiten machen den Unterschied zwischen App und Lesezeichen.
+/// Short haptic feedback in the hand. A website doesn't have this, and exactly such
+/// small touches make the difference between an app and a bookmark.
 enum Haptics {
     static func tap() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()

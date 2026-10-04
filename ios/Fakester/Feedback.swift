@@ -1,12 +1,12 @@
 import SwiftUI
 import UIKit
 
-// Rueckmeldung: Handy schuetteln (oder "Feedback" auf dem Startbildschirm) -> kurzer Text an den
-// Server des Entwicklers. Dort landet er in einer Liste; was davon umgesetzt wird, entscheidet der
-// Entwickler. Kein Konto noetig, der Server drosselt (5 pro Stunde).
+// Feedback: shake the phone (or tap "Feedback" on the home screen) -> a short text goes to the
+// developer's server. It lands in a list there; the developer decides what gets implemented.
+// No account needed, the server rate-limits (5 per hour).
 
 extension Notification.Name {
-    static let deviceShaken = Notification.Name("geschuettelt")
+    static let deviceShaken = Notification.Name("deviceShaken")
 }
 
 extension UIWindow {
@@ -45,7 +45,7 @@ enum Feedback {
     }
 }
 
-/// Das Fenster zum Schreiben.
+/// The sheet for writing feedback.
 struct FeedbackSheet: View {
     let currentScreen: String
     @Environment(\.dismiss) private var close

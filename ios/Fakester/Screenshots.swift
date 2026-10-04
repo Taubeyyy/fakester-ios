@@ -1,14 +1,14 @@
 #if DEBUG
 import SwiftUI
 
-/// Vorschau-Modus fuer die Bildschirmfotos im CI (`.github/workflows/screens.yml`):
-/// Startargument `-vorschau <szene>`. Gibt es nur in Debug-Builds - der
-/// Release-Build fuer die .ipa enthaelt nichts davon.
+/// Preview mode for the CI screenshots (`.github/workflows/ios.yml`):
+/// launch argument `-vorschau <scene>`. Only exists in Debug builds - the
+/// Release build for the .ipa contains none of it.
 ///
-/// Die Nachrichten sind ein echter Mitschnitt (fakester.app, 2026-10-04, Gast
-/// erstellt eine private Lobby mit "Featured", 5 Songs). Sie laufen durch
-/// `Spiel.verarbeiten`, also genau den Weg echter Nachrichten - die Fotos
-/// zeigen die App so, wie sie im Spiel aussieht.
+/// The messages are a real capture (fakester.app, 2026-10-04, a guest creates
+/// a private lobby with "Featured", 5 songs). They go through
+/// `Game.handleMessage`, exactly the path of real messages - so the screenshots
+/// show the app as it looks in a game.
 enum ScreenshotScene {
     static var sceneName: String? {
         let a: [String] = ProcessInfo.processInfo.arguments

@@ -1,13 +1,12 @@
 import Foundation
 import SwiftUI
 
-/// Die Spielverbindung: eine WebSocket zu `wss://fakester.app/fakester/ws`.
+/// The game connection: a WebSocket to `wss://fakester.app/fakester/ws`.
 ///
-/// Hier steckt der ganze Spielzustand. Die Ansichten lesen nur ab - was auf dem
-/// Bildschirm passiert, entscheidet immer der Server, nicht die App. Das ist
-/// nicht Bequemlichkeit, sondern Notwendigkeit: bei einem Spiel auf Zeit mit
-/// mehreren Leuten ist jede lokale Annahme eine Gelegenheit, etwas anderes zu
-/// zeigen als die anderen sehen.
+/// All game state lives here. The views only read it - what happens on screen
+/// is always decided by the server, never by the app. That is not convenience
+/// but necessity: in a timed game with several people, every local assumption
+/// is a chance to show something different from what everyone else sees.
 @MainActor
 final class Game: NSObject, ObservableObject {
 
@@ -15,13 +14,13 @@ final class Game: NSObject, ObservableObject {
         case disconnected
         case connecting
         case lobby
-        case loading            // Server sucht und prueft Songs
+        case loading            // server is picking and checking songs
         case activeRound
         case reveal
         case end
     }
 
-    // MARK: Zustand
+    // MARK: State
 
     @Published private(set) var currentPhase: Phase = .disconnected
     @Published private(set) var pin: String = ""
@@ -34,51 +33,50 @@ final class Game: NSObject, ObservableObject {
     @Published private(set) var outcome: RoundResult?
     @Published private(set) var finalStandings: FinalStandings?
     @Published private(set) var chat: [ChatLine] = []
-    /// Emoji-Reaktionen, die gerade ueber den Bildschirm schweben. Jede geht
-    /// nach ein paar Sekunden von selbst.
+    /// Emoji reactions currently floating across the screen. Each one goes
+    /// away by itself after a few seconds.
     @Published private(set) var reactions: [Reaction] = []
 
     @Published private(set) var loadingText: String = ""
     @Published private(set) var loadProgress: LoadingProgress?
     @Published private(set) var countdownNumber: Int?
 
-    /// Was gerade eingetippt bzw. angetippt ist. Gehoert der App, nicht dem
-    /// Server - bis es abgeschickt wird.
+    /// What is currently typed or tapped. Belongs to the app, not the
+    /// server - until it is submitted.
     @Published var answer = Answer()
     @Published private(set) var lockedIn = false
 
-    /// Sekunden bis Rundenende, aus der Serverzeit gerechnet.
+    /// Seconds until the round ends, computed from server time.
     @Published private(set) var secondsLeft: Int = 0
 
     @Published var notice: String?
     @Published private(set) var kick: KickNotice?
 
-    /// Wer ich in dieser Lobby bin.
+    /// Who I am in this lobby.
     private(set) var ownId: String = ""
 
     var iAmHost: Bool { !ownId.isEmpty && ownId == hostId }
     var me: Player? { player.first { $0.id.text == ownId } }
 
-    /// Rate-Arten dieser Runde. Der Server schickt sie pro Runde mit; die
-    /// Lobby-Einstellung ist nur die Vorgabe.
+    /// Guess types for this round. The server sends them with every round;
+    /// the lobby setting is only the default.
     var guessKinds: [String] { activeRound?.guessTypes ?? lobbySettings?.guessTypes ?? [] }
 
-    // MARK: Innereien
+    // MARK: Internals
 
     private var wsSession: URLSession?
     private var socket: URLSessionWebSocketTask?
     private var identity: PlayerIdentity?
-    /// Wartet darauf, beim naechsten Verbinden als `create-game` rauszugehen.
-    /// Danach ist sie weg - ein Neuverbinden tritt der PIN bei, statt eine
-    /// zweite Lobby aufzumachen.
+    /// Waits to go out as `create-game` on the next connect. After that it is
+    /// gone - a reconnect joins the PIN instead of opening a second lobby.
     private var pendingCreate: [String: Any]?
-    private var wantsConnection = false        // absichtlich drin? Dann neu verbinden.
+    private var wantsConnection = false        // in on purpose? Then reconnect.
     private var attempts = 0
     private var heartbeat: Timer?
     private var clock: Timer?
     private var roundEnd: Date?
 
-    // MARK: - Tuer auf
+    // MARK: - Entering
 
     func join(pin newPin: String, asPlayer who: PlayerIdentity) {
         self.pin = newPin.trimmingCharacters(in: .whitespaces)
@@ -89,7 +87,7 @@ final class Game: NSObject, ObservableObject {
         connect()
     }
 
-    /// Eigenes Spiel aufmachen. Die PIN kommt mit dem ersten `lobby-update`.
+    /// Open our own game. The PIN arrives with the first `lobby-update`.
     func createGame(_ setup: [String: Any], asPlayer who: PlayerIdentity) {
         self.pin = ""
         self.identity = who
@@ -114,8 +112,8 @@ final class Game: NSObject, ObservableObject {
         finalStandings = nil
         chat = []
         reactions = []
-        // Muss mit weg, sonst steht der Hinweis beim naechsten Mal sofort
-        // wieder da - er haengt an diesem Wert, nicht an einem Knopf.
+        // Must be cleared too, otherwise the notice reappears right away next
+        // time - it is bound to this value, not to a button.
         kick = nil
         AudioPlayer.instance.stop()
     }
@@ -145,9 +143,9 @@ final class Game: NSObject, ObservableObject {
         wsSession = nil
     }
 
-    /// Nach einem Abriss neu aufbauen - mit wachsendem Abstand, aber gedeckelt.
-    /// Der Server kennt zurueckkehrende Spieler und schickt beim Wiedereintritt
-    /// `state-sync`, also landet man dort weiter, wo man war.
+    /// Rebuild after a drop - with growing delay, but capped. The server
+    /// recognises returning players and sends `state-sync` on rejoin, so you
+    /// land right back where you were.
     private func retryLater() {
         guard wantsConnection else { return }
         attempts += 1
@@ -160,7 +158,7 @@ final class Game: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Senden
+    // MARK: - Sending
 
     private func emit(_ msgType: String, _ payloadObject: [String: Any]) {
         guard let t = socket else { return }
@@ -183,7 +181,7 @@ final class Game: NSObject, ObservableObject {
             "avatar_url": a.avatar_url as Any, "equipped_emoji": a.equipped_emoji as Any
         ]
         if !a.isGuest {
-            // Nur angemeldete Spieler sind fuer Freunde sichtbar.
+            // Only logged-in players are visible to friends.
             emit("register-online", ["userId": a.id, "username": a.username])
         }
         if var latest = pendingCreate, pin.isEmpty {
@@ -195,7 +193,7 @@ final class Game: NSObject, ObservableObject {
         emit("join-game", ["pin": pin, "user": who])
     }
 
-    // MARK: Befehle aus den Ansichten
+    // MARK: Commands from the views
 
     func lockIn() {
         guard !guessKinds.isEmpty else { return }
@@ -206,8 +204,8 @@ final class Game: NSObject, ObservableObject {
         lockedIn = true
     }
 
-    /// Antwort wieder aufmachen. Der Server erlaubt das beliebig oft - es kostet
-    /// von selbst etwas, weil der Schnelligkeitsbonus am Sperrzeitpunkt haengt.
+    /// Reopen the answer. The server allows this any number of times - it has
+    /// a built-in cost, because the speed bonus depends on the lock-in time.
     func reconsider() {
         emit("player-unready", [:])
         lockedIn = false
@@ -225,17 +223,17 @@ final class Game: NSObject, ObservableObject {
     func sendChat(_ text: String) {
         let cleaned = text.trimmingCharacters(in: .whitespaces)
         guard !cleaned.isEmpty else { return }
-        // ⚠️ `text`, nicht `message`: mit `message` verwirft der Server die
-        // Zeile still (im Mitschnitt vom 2026-10-04 nachgeprueft).
+        // ⚠️ `text`, not `message`: with `message` the server silently drops
+        // the line (verified in the capture from 2026-10-04).
         emit("send-chat", ["text": cleaned])
     }
 
-    /// Emoji an alle in der Lobby/Runde.
+    /// Emoji to everyone in the lobby/round.
     func react(_ emoji: String) {
         emit("send-reaction", ["reaction": emoji])
     }
 
-    // MARK: - Empfangen
+    // MARK: - Receiving
 
     private func receiveNext() {
         socket?.receive { [weak self] outcome in
@@ -275,13 +273,13 @@ final class Game: NSObject, ObservableObject {
             lobbySettings = p.settings ?? lobbySettings
             if let m = p.gameMode { playMode = m }
             if !p.pin.isEmpty { pin = p.pin }
-            // ⚠️ Ein lobby-update kommt AUCH mitten in der Runde - so sehen alle,
-            // wer schon gesperrt hat. Wer das als "du bist jetzt in der Lobby"
-            // liest, fliegt aus der laufenden Runde. Deshalb entscheidet
-            // gameState, nicht der Nachrichtentyp.
+            // ⚠️ A lobby-update ALSO arrives in the middle of a round - that is
+            // how everyone sees who has already locked in. Reading it as "you are
+            // in the lobby now" kicks you out of the running round. So gameState
+            // decides, not the message type.
             if p.gameState == "LOBBY" && currentPhase != .end { currentPhase = .lobby }
-            // Der Server kann die Sperre aufheben (neue Runde, Rueckkehr) -
-            // dann soll der Knopf hier auch wieder aufgehen.
+            // The server can lift the lock (new round, return to lobby) -
+            // then the button here should reopen as well.
             if let myEntry = p.players.first(where: { $0.id.text == ownId }) {
                 lockedIn = myEntry.isReady
             }
@@ -358,8 +356,8 @@ final class Game: NSObject, ObservableObject {
         case "toast":
             guard let h = parse(ToastMessage.self) else { return }
             if !h.message.isEmpty { notice = h.message }
-            // Ein Fehler, bevor es ueberhaupt eine PIN gibt, heisst: das
-            // Erstellen ist gescheitert. Sonst haengt man ewig bei "Verbinde…".
+            // An error before there is even a PIN means creating the game
+            // failed. Otherwise you'd hang forever on "Connecting…".
             if h.isError && pin.isEmpty && currentPhase == .connecting {
                 wantsConnection = false
                 tearDown()
@@ -379,23 +377,23 @@ final class Game: NSObject, ObservableObject {
             currentPhase = .disconnected
 
         case "host-changed":
-            // Die Spielerliste kommt gleich als lobby-update hinterher; hier
-            // zaehlt nur, dass der Start-Knopf sofort richtig steht.
+            // The player list follows shortly as a lobby-update; all that
+            // matters here is that the Start button is right immediately.
             if let p = parse(LobbyUpdate.self) { hostId = p.hostId?.text }
 
         default:
-            // Unbekannte Nachrichten sind kein Fehler: der Server bekommt
-            // laufend neue Typen, und ein Client, der daran erstickt, ist mit
-            // jedem Serverupdate kaputt.
+            // Unknown messages are not an error: the server keeps gaining new
+            // types, and a client that chokes on them breaks with every
+            // server update.
             break
         }
     }
 
-    // MARK: - Uhr
+    // MARK: - Clock
 
-    /// Der Server startet die Runde erst nach einer Schonfrist und rechnet den
-    /// Schnelligkeitsbonus ab da. Die Anzeige muss dasselbe tun, sonst laeuft
-    /// sie der echten Runde voraus.
+    /// The server only starts the round after a grace period and computes the
+    /// speed bonus from then on. The display must do the same, otherwise it
+    /// runs ahead of the real round.
     private func startClock(roundSeconds: Int, graceMs: Int) {
         clock?.invalidate()
         let end = Date().addingTimeInterval(Double(graceMs) / 1000 + Double(roundSeconds))
@@ -412,7 +410,7 @@ final class Game: NSObject, ObservableObject {
     }
 }
 
-// MARK: - Verbindungsereignisse
+// MARK: - Connection events
 
 extension Game: URLSessionWebSocketDelegate {
     nonisolated func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask,
@@ -428,16 +426,15 @@ extension Game: URLSessionWebSocketDelegate {
                                didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
                                reason: Data?) {
         Task { @MainActor in
-            // 4003 ist der Bann. Da hilft kein neuer Versuch.
+            // 4003 is the ban. No retry will help there.
             if closeCode.rawValue == 4003 { self.wantsConnection = false; return }
             self.retryLater()
         }
     }
 
-    /// Ein Mobilfunknetz raeumt stille Verbindungen weg, ohne jemanden zu
-    /// benachrichtigen - fuer die App sieht das aus wie eine offene Leitung,
-    /// auf der nie wieder etwas passiert. Der Server antwortet auf dieses
-    /// Klopfen mit `pong`.
+    /// A cellular network clears out idle connections without telling anyone -
+    /// to the app that looks like an open line on which nothing ever happens
+    /// again. The server answers this knock with `pong`.
     private func startHeartbeat() {
         heartbeat?.invalidate()
         heartbeat = Timer.scheduledTimer(withTimeInterval: 25, repeats: true) { [weak self] _ in
@@ -448,9 +445,9 @@ extension Game: URLSessionWebSocketDelegate {
 
 #if DEBUG
 extension Game {
-    /// Nur fuer die Bildschirmfotos im CI (`-vorschau`, siehe Vorschau.swift):
-    /// spielt mitgeschnittene Server-Nachrichten ab - ohne Verbindung, durch
-    /// genau denselben Weg wie echte Nachrichten.
+    /// Only for the CI screenshots (`-vorschau`, see Screenshots.swift):
+    /// replays captured server messages - without a connection, through
+    /// exactly the same path as real messages.
     func replay(asPlayer id: String, _ messages: [String]) {
         ownId = id
         for n in messages { handleMessage(Data(n.utf8)) }

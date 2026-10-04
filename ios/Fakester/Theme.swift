@@ -2,44 +2,44 @@ import SwiftUI
 import UIKit
 import CoreText
 
-/// Das Aussehen, gemessen an der laufenden fakester.app (Handyformat 375×812,
-/// `getComputedStyle`, Oktober 2026) - nicht am alten style.css.
-/// Die Namen in Klammern sind die CSS-Variablen bzw. Werte im Browser.
+/// The look, measured on the live fakester.app (phone format 375×812,
+/// `getComputedStyle`, October 2026) - not on the old style.css.
+/// The trailing comments name the CSS variables or values in the browser.
 enum Palette {
     static let base      = Color(hex: 0x07070E)                 // --background
-    static let muted     = Color(hex: 0x15142A)                 // --muted (Eingabefelder)
-    static let secondary     = Color(hex: 0x1A1831)                 // --secondary (Feld mit Fokus)
+    static let muted     = Color(hex: 0x15142A)                 // --muted (input fields)
+    static let secondary     = Color(hex: 0x1A1831)                 // --secondary (focused field)
     static let surface    = Color(hex: 0x0F0E1C)                 // --card
-    /// Die erhabenen Karten im Browser: rgba(24, 23, 39, .92).
+    /// The raised cards in the browser: rgba(24, 23, 39, .92).
     static let card      = Color(.sRGB, red: 24 / 255, green: 23 / 255, blue: 39 / 255, opacity: 0.92)
     static let border      = Color.white.opacity(0.07)            // --border
     static let rim      = Color.white.opacity(0.09)
-    /// --acc: haengt am ausgeruesteten Gegenstand, Vorgabe ist dieses Lila.
+    /// --acc: follows the equipped item; this purple is the default.
     static let accent     = Color(hex: 0xB15CFF)
-    static let accentDeep = Color(hex: 0x7000D7)                 // der Schein unter lila Knoepfen
+    static let accentDeep = Color(hex: 0x7000D7)                 // the glow under purple buttons
     static let accentLight = Color(hex: 0xC77DFF)
     static let foreground    = Color(hex: 0xEEEEFF)                 // --foreground
-    static let subdued  = Color(hex: 0x8D8BA4)                 // Etiketten, "/ 5"
+    static let subdued  = Color(hex: 0x8D8BA4)                 // labels, "/ 5"
     static let faint      = Color(hex: 0x7877A0)                 // --muted-foreground
     static let good        = Color(hex: 0x34D399)                 // --accent
     static let bad   = Color(hex: 0xF87171)                 // --destructive
     static let gold       = Color(hex: 0xFBBF24)
-    /// Schrift auf dem lila Knopf - im Browser weiss.
+    /// Text on the purple button - white in the browser.
     static let onAccent  = Color.white
 
-    /// Die vier Farben der Kacheln auf dem Startbildschirm - im Browser traegt
-    /// jede ihren eigenen Ton, das ist dort der halbe Wiedererkennungswert.
+    /// The four tile colours on the home screen - in the browser each tile has
+    /// its own hue, which is half of what makes the screen recognisable.
     static let tilePurple  = Color(hex: 0xA78BFA)
     static let tileGold  = Color(hex: 0xFBBF24)
     static let tileGreen = Color(hex: 0x34D399)
     static let tilePink  = Color(hex: 0xF472B6)
     static let discord     = Color(hex: 0x5865F2)
 
-    /// Der grosse Knopf. Im Browser eine flache Farbe (#b15cff), kein Verlauf -
-    /// der Name bleibt, damit alle Stellen weiter passen.
+    /// The big button. A flat colour in the browser (#b15cff), no gradient -
+    /// the name stays so every call site keeps working.
     static let gradient = LinearGradient(colors: [Color(hex: 0xB15CFF), Color(hex: 0xB15CFF)],
                                         startPoint: .top, endPoint: .bottom)
-    /// "STER" im Schriftzug - ebenfalls flach.
+    /// "STER" in the wordmark - flat as well.
     static let gradientHero = LinearGradient(colors: [Color(hex: 0xB15CFF), Color(hex: 0xB15CFF)],
                                             startPoint: .leading, endPoint: .trailing)
 }
@@ -54,16 +54,16 @@ extension Color {
     }
 }
 
-// MARK: - Schrift
+// MARK: - Fonts
 
-/// Welche Schrift die Webseite wirklich zeigt: Das Bundle fragt per Inline-Stil
-/// nach "Bricolage Grotesque" und "DM Sans", liefert die Dateien aber unter den
-/// Namen "Bricolage Grotesque Variable" / "DM Sans Variable" aus. Die Namen
-/// passen nicht zusammen, also laedt kein Browser die Schriften (document.fonts
-/// zeigt nur Font Awesome als geladen) und es greift `sans-serif`. Safari auf
-/// dem iPhone nimmt dafuer Helvetica: Gewicht bis 500 normal, ab 600 fett.
-/// Ein paar Stellen (Auflösungsblatt, Gast-Hinweis) laufen ueber Tailwinds
-/// `system-ui` - das ist San Francisco, siehe `Font.system`.
+/// The font the website really shows: the bundle asks for "Bricolage Grotesque"
+/// and "DM Sans" via inline styles, but ships the files under the names
+/// "Bricolage Grotesque Variable" / "DM Sans Variable". The names don't match,
+/// so no browser loads the fonts (document.fonts lists only Font Awesome as
+/// loaded) and `sans-serif` kicks in. Safari on the iPhone uses Helvetica for
+/// that: weights up to 500 regular, from 600 bold.
+/// A few places (reveal sheet, guest notice) use Tailwind's `system-ui` -
+/// that is San Francisco, see `Font.system`.
 enum Typeface {
     static func ui(_ dimension: CGFloat, _ fontWeight: Font.Weight) -> UIFont {
         let name: String
@@ -78,23 +78,23 @@ enum Typeface {
 }
 
 extension Font {
-    /// Die Schrift der Webseite (Helvetica, siehe `Schrift`).
+    /// The website's font (Helvetica, see `Typeface`).
     static func brand(_ dimension: CGFloat, _ fontWeight: Font.Weight = .regular) -> Font {
         Font(Typeface.ui(dimension, fontWeight) as CTFont)
     }
 
-    /// Frueher DM Mono. Die Webseite zeigt PIN und Punkte in derselben Schrift
-    /// wie alles andere - also Helvetica, standardmaessig fett.
+    /// Formerly DM Mono. The website shows PIN and points in the same font as
+    /// everything else - so Helvetica, bold by default.
     static func mono(_ dimension: CGFloat, isBold: Bool = true) -> Font {
         Font(Typeface.ui(dimension, isBold ? .bold : .regular) as CTFont)
     }
 }
 
-// MARK: - Bausteine
+// MARK: - Building blocks
 
-/// Der Hintergrund des ganzen Spiels wie im Browser: #07070e, ein Punkteraster
-/// (26 px, 1 px weiss 4 %) und drei weiche Farbflecken, die langsam treiben
-/// (.blob-a lila oben links, .blob-b gruen unten rechts, .blob-c magenta mittig).
+/// The background of the whole game as in the browser: #07070e, a dot grid
+/// (26 px, 1 px white at 4 %) and three soft colour blobs that drift slowly
+/// (.blob-a purple top left, .blob-b green bottom right, .blob-c magenta centre).
 struct Backdrop: View {
     @State private var drifting = false
 
@@ -126,7 +126,7 @@ struct Backdrop: View {
     }
 }
 
-/// radial-gradient(circle, Farbe, transparent 65%) mit filter: blur().
+/// radial-gradient(circle, colour, transparent 65%) with filter: blur().
 private struct Blob: View {
     let hue: Color
     let diameter: CGFloat
@@ -142,7 +142,7 @@ private struct Blob: View {
     }
 }
 
-/// Das feine Punkteraster ueber dem ganzen Hintergrund.
+/// The fine dot grid across the whole background.
 private struct DotGrid: View {
     var body: some View {
         Canvas { ctx, dimension in
@@ -162,7 +162,7 @@ private struct DotGrid: View {
     }
 }
 
-/// Eine Karte wie .section-card: Glas, feine Kante, Schatten.
+/// A card like .section-card: glass, fine border, shadow.
 struct Card<Content: View>: View {
     var inset: CGFloat = 18
     @ViewBuilder var contents: Content
@@ -175,8 +175,8 @@ struct Card<Content: View>: View {
     }
 }
 
-/// Der Grund von Karten (rounded-2xl border, rgba(24,23,39,.92)): feine Kante,
-/// weicher Schatten, ein Hauch Licht oben. Bewusst ohne iOS-Material.
+/// The card surface (rounded-2xl border, rgba(24,23,39,.92)): fine border,
+/// soft shadow, a touch of light at the top. Deliberately no iOS material.
 struct GlassPanel: View {
     var radius: CGFloat = 16
     var rim: Color = Palette.border
@@ -193,7 +193,7 @@ struct GlassPanel: View {
     }
 }
 
-/// --sh-inset: ein Hauch Licht an der Oberkante (inset 0 1px 0 rgba(255,255,255,.06)).
+/// --sh-inset: a touch of light along the top edge (inset 0 1px 0 rgba(255,255,255,.06)).
 struct EdgeHighlight: View {
     var radius: CGFloat = 16
     var intensity: Double = 0.08
@@ -209,10 +209,10 @@ struct EdgeHighlight: View {
     }
 }
 
-/// Der grosse Knopf wie "Play now" / "Create Game": flaches Lila (#b15cff),
-/// weisse fette Schrift, Ecken 16, lila Schein darunter
-/// (0 8px 24px rgba(112,0,215,.3)) und ein heller Strich an der Oberkante.
-/// farbe: Farbe.kante macht daraus die ruhige Glas-Variante.
+/// The big button like "Play now" / "Create Game": flat purple (#b15cff),
+/// white bold text, corner radius 16, a purple glow underneath
+/// (0 8px 24px rgba(112,0,215,.3)) and a bright line along the top edge.
+/// hue: Palette.rim turns it into the quiet glass variant.
 struct PrimaryButtonStyle: ButtonStyle {
     var hue: Color = Palette.accent
     var dimmed: Bool = false
@@ -234,15 +234,15 @@ struct PrimaryButtonStyle: ButtonStyle {
             .overlay(shape.strokeBorder(isGlass ? Palette.rim : Color.clear, lineWidth: 1))
             .overlay(EdgeHighlight(radius: 16, intensity: isGlass ? 0.05 : 0.18))
             .shadow(color: dimmed ? .clear : glow, radius: 12, x: 0, y: 8)
-            // gesperrt: blasses Lila mit leiser Schrift, wie "Pick title, artist & year"
+            // disabled: faded purple with subdued text, like "Pick title, artist & year"
             .opacity(dimmed ? 0.5 : 1)
             .scaleEffect(pressed ? 0.98 : 1)
             .animation(.spring(response: 0.22, dampingFraction: 0.55), value: configuration.isPressed)
     }
 }
 
-/// Der ruhige Knopf daneben ("Join"): rgba(20,18,38,.75), Kante weiss 9 %,
-/// Schrift #d8d7ee.
+/// The quiet button next to it ("Join"): rgba(20,18,38,.75), white border at 9 %,
+/// text #d8d7ee.
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -259,8 +259,8 @@ struct SecondaryButtonStyle: ButtonStyle {
     }
 }
 
-/// "× Leave" oben rechts: rote Pille, rgba(239,68,68,.1) mit Kante .3,
-/// Schrift #f87171 11 pt fett, 6/12 Polster.
+/// "× Leave" top right: red pill, rgba(239,68,68,.1) with a .3 border,
+/// text #f87171 11 pt bold, 6/12 padding.
 struct LeaveButton: View {
     let onTap: () -> Void
 
@@ -289,7 +289,7 @@ extension Palette {
 }
 
 extension Text {
-    /// Die kleinen Etiketten im Spiel (TITLE, ARTIST …): 10 pt fett, 1 pt gesperrt, #8d8ba4.
+    /// The small labels in the game (TITLE, ARTIST …): 10 pt bold, 1 pt tracking, #8d8ba4.
     func eyebrow() -> some View {
         self.font(.brand(10, .bold))
             .tracking(1)
@@ -297,8 +297,8 @@ extension Text {
     }
 }
 
-/// Der Schriftzug: FAKE #eef, STER #b15cff, beide mit weichem Schein
-/// (text-shadow 0 0 70px), Buchstabenabstand -0,045 em, sehr fett.
+/// The wordmark: FAKE #eef, STER #b15cff, both with a soft glow
+/// (text-shadow 0 0 70px), letter spacing -0.045 em, very heavy.
 struct Wordmark: View {
     var dimension: CGFloat = 30
 

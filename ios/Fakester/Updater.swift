@@ -1,9 +1,9 @@
 import SwiftUI
 import UIKit
 
-// Neue Version? Fragt beim Start das neueste GitHub-Release (build-<N>) ab und bietet die
-// Installation per TrollStore an. Nur fuer die TrollStore-Fassung - im App Store ist so etwas
-// verboten, dort muss das hier raus (Apple aktualisiert dann selbst).
+// New version? On launch, asks for the latest GitHub release (build-<N>) and offers to
+// install it via TrollStore. Only for the TrollStore build - the App Store forbids this,
+// so it must be removed for an App Store build (Apple then handles updates itself).
 
 @MainActor
 final class Updater: ObservableObject {
@@ -23,7 +23,7 @@ final class Updater: ObservableObject {
     }
 
     func checkForUpdate() async {
-        // hoechstens alle 10 Minuten (GitHub erlaubt ohne Anmeldung 60 Abfragen pro Stunde)
+        // at most every 10 minutes (GitHub allows 60 unauthenticated requests per hour)
         if let previous, Date().timeIntervalSince(previous) < 600 { return }
         previous = Date()
 
@@ -38,7 +38,7 @@ final class Updater: ObservableObject {
               let build = Int(v.tag_name.replacingOccurrences(of: "build-", with: "")),
               build > currentBuild,
               let ipa = v.assets.first(where: { $0.name.hasSuffix(".ipa") }) else { return }
-        // Release-Text ist "Commit abc1234: <Nachricht>" - nur die Nachricht zeigen
+        // Release text is "Commit abc1234: <message>" - show only the message
         var text = v.body ?? ""
         if let colon = text.range(of: ": "), text.hasPrefix("Commit ") { text = String(text[colon.upperBound...]) }
         withAnimation(.easeOut(duration: 0.25)) {
@@ -55,7 +55,7 @@ final class Updater: ObservableObject {
     }
 }
 
-/// Karte auf dem Startbildschirm, wenn es eine neue Version gibt.
+/// Card on the home screen when a new version is available.
 struct UpdateCard: View {
     @ObservedObject private var updater = Updater.shared
 
