@@ -84,13 +84,15 @@ struct AufloesungAnsicht: View {
                     }
 
                     Karte {
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 7) {
                             Text(L("STAND", "STANDINGS")).etikett()
-                            ForEach(spiel.spieler) { s in
+                                .padding(.bottom, 3)
+                            ForEach(Array(spiel.spieler.enumerated()), id: \.element.id) { i, s in
                                 SpielerZeile(spieler: s,
                                              istHost: s.id.text == spiel.hostId,
                                              binIch: s.id.text == spiel.eigeneId,
-                                             punkte: true)
+                                             punkte: true,
+                                             platz: i + 1)
                             }
                         }
                     }
@@ -122,40 +124,9 @@ struct EndeAnsicht: View {
             Kopfzeile(titel: L("Endstand", "Final standings"), unterzeile: nil) { spiel.verlassen() }
 
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 10) {
                     ForEach(Array(spiel.spieler.enumerated()), id: \.element.id) { platz, s in
-                        Karte {
-                            HStack(spacing: 12) {
-                                Text("\(platz + 1)")
-                                    .font(.marke(18, .black))
-                                    .foregroundColor(platz == 0 ? Farbe.akzent : Farbe.gedaempft)
-                                    .frame(width: 26)
-                                    .monospacedDigit()
-
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(s.nickname)
-                                        .font(.marke(16, .bold))
-                                        .foregroundColor(Farbe.schrift)
-                                        .lineLimit(1)
-                                    Text(L("\(s.correctAnswers) richtig · längste Serie \(s.bestStreak)",
-                                           "\(s.correctAnswers) correct · best streak \(s.bestStreak)"))
-                                        .font(.marke(12))
-                                        .foregroundColor(Farbe.gedaempft)
-                                    if let b = s.rewards, b.xp > 0 || b.spots > 0 || b.goldSpots > 0 {
-                                        Text(belohnungText(b))
-                                            .font(.marke(12, .semibold))
-                                            .foregroundColor(Farbe.akzentHell)
-                                    }
-                                }
-
-                                Spacer(minLength: 0)
-
-                                Text("\(s.score)")
-                                    .font(.mono(20))
-                                    .foregroundColor(Farbe.schrift)
-                                    .monospacedDigit()
-                            }
-                        }
+                        EndZeile(spieler: s, platz: platz + 1, belohnung: s.rewards.map { belohnungText($0) })
                     }
 
                     if let lieder = spiel.endstand?.songs, !lieder.isEmpty {
@@ -204,6 +175,57 @@ struct EndeAnsicht: View {
         if b.spots > 0 { teile.append("+\(b.spots) Spots") }
         if b.goldSpots > 0 { teile.append("+\(b.goldSpots) Gold") }
         return teile.joined(separator: " · ")
+    }
+}
+
+/// .end-player: Zeile im Endstand, der Sieger in Gold und leicht pulsierend.
+struct EndZeile: View {
+    let spieler: Spieler
+    let platz: Int
+    let belohnung: String?
+    @State private var glimmt = false
+
+    var body: some View {
+        let sieger: Bool = platz == 1
+        let form = RoundedRectangle(cornerRadius: 10, style: .continuous)
+        HStack(spacing: 12) {
+            Rang(platz: platz, groesse: 30)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(spieler.nickname)
+                    .font(.marke(15, .heavy))
+                    .foregroundColor(Farbe.schrift)
+                    .lineLimit(1)
+                Text(L("\(spieler.correctAnswers) richtig · längste Serie \(spieler.bestStreak)",
+                       "\(spieler.correctAnswers) correct · best streak \(spieler.bestStreak)"))
+                    .font(.marke(12))
+                    .foregroundColor(Farbe.gedaempft)
+                if let b = belohnung, !b.isEmpty {
+                    Text(b)
+                        .font(.marke(12, .bold))
+                        .foregroundColor(Farbe.gold)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Text("\(spieler.score)")
+                .font(.mono(16))
+                .foregroundColor(Farbe.akzent)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(form.fill(sieger
+            ? AnyShapeStyle(LinearGradient(colors: [Farbe.gold.opacity(0.14), Farbe.grund3],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing))
+            : AnyShapeStyle(Farbe.grund3)))
+        .overlay(form.strokeBorder(sieger ? Farbe.gold : Farbe.linie, lineWidth: 1))
+        .overlay(form.stroke(Farbe.gold.opacity(sieger ? (glimmt ? 0.4 : 0.15) : 0), lineWidth: 2).padding(-1.5))
+        .shadow(color: Farbe.gold.opacity(sieger && glimmt ? 0.28 : 0), radius: 13)
+        .onAppear {
+            guard sieger else { return }
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { glimmt = true }
+        }
     }
 }
 

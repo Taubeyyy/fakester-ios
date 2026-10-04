@@ -11,7 +11,8 @@ struct RundenAnsicht: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Kopfzeile(titel: titel, unterzeile: nil) { spiel.verlassen() }
+            RundenKopf(runde: spiel.runde?.round, gesamt: spiel.runde?.totalRounds,
+                       rest: spiel.restzeit) { spiel.verlassen() }
 
             Uhr(rest: spiel.restzeit, gesamt: spiel.einstellungen?.guessTime ?? 30)
                 .padding(.horizontal, 20)
@@ -67,11 +68,6 @@ struct RundenAnsicht: View {
         }
     }
 
-    private var titel: String {
-        guard let r = spiel.runde else { return L("Runde", "Round") }
-        return L("Runde \(r.round) / \(r.totalRounds)", "Round \(r.round) / \(r.totalRounds)")
-    }
-
     private var vollstaendig: Bool { spiel.antwort.vollstaendig(fuer: spiel.rateArten) }
     private var ratend: Int { spiel.spieler.filter { !$0.watchOnly && $0.isConnected }.count }
     private var fertig: Int { spiel.spieler.filter { !$0.watchOnly && $0.isReady }.count }
@@ -81,35 +77,18 @@ struct RundenAnsicht: View {
     @ViewBuilder
     private func Auswahl(art: String) -> some View {
         let moeglichkeiten = spiel.runde?.mcOptions[art] ?? []
-        VStack(spacing: 8) {
+        let spalten: [GridItem] = [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)]
+        LazyVGrid(columns: spalten, spacing: 8) {
             ForEach(moeglichkeiten, id: \.self) { m in
                 let gewaehlt = spiel.antwort[art] == m.text
                 Button {
                     Spuerbar.tipp()
                     spiel.antwort[art] = gewaehlt ? "" : m.text
                 } label: {
-                    HStack {
-                        Text(m.text)
-                            .font(.marke(15, gewaehlt ? .heavy : .semibold))
-                            .foregroundColor(gewaehlt ? Farbe.aufAkzent : Farbe.schrift)
-                            .multilineTextAlignment(.leading)
-                            .lineLimit(2)
-                        Spacer(minLength: 6)
-                    }
-                    .padding(.horizontal, 14)
-                    .frame(minHeight: 48)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(gewaehlt ? AnyShapeStyle(Farbe.verlauf) : AnyShapeStyle(Farbe.grund3))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(gewaehlt ? Color.white.opacity(0.12) : Farbe.linie, lineWidth: 1.5)
-                    )
-                    .shadow(color: gewaehlt ? Farbe.akzent.opacity(0.36) : .clear, radius: 10, x: 0, y: 2)
+                    AntwortFeld(text: m.text, gewaehlt: gewaehlt,
+                                gesperrt: spiel.abgegeben && !gewaehlt)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(BubbleDruck())
             }
         }
     }
@@ -166,6 +145,41 @@ struct Plattenteller: View {
     }
 }
 
+/// .mc-btn: dunkle Kachel, links ein schmaler Streifen, gewaehlt lila umrandet.
+struct AntwortFeld: View {
+    let text: String
+    let gewaehlt: Bool
+    var gesperrt: Bool = false
+
+    var body: some View {
+        let form = RoundedRectangle(cornerRadius: 10, style: .continuous)
+        HStack(spacing: 0) {
+            Text(text)
+                .font(.marke(14, .bold))
+                .foregroundColor(gewaehlt ? Farbe.akzent : Farbe.schrift)
+                .multilineTextAlignment(.leading)
+                .lineLimit(3)
+                .minimumScaleFactor(0.85)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+        .background(form.fill(gewaehlt ? Farbe.akzentDim : Farbe.grund3))
+        .overlay(alignment: .leading) {
+            Rectangle()
+                .fill(gewaehlt ? Farbe.akzentTief : Color.clear)
+                .frame(width: 3)
+        }
+        .clipShape(form)
+        .overlay(form.strokeBorder(gewaehlt ? Farbe.akzentTief : Farbe.kante, lineWidth: 1.5))
+        .overlay(form.stroke(Farbe.akzent.opacity(gewaehlt ? 0.22 : 0), lineWidth: 3).padding(-1.5))
+        .overlay(Lichtkante(radius: 10, staerke: 0.06))
+        .opacity(gesperrt ? 0.4 : 1)
+        .animation(.spring(response: 0.2, dampingFraction: 0.6), value: gewaehlt)
+    }
+}
+
 /// Die Restzeit als Balken. Zahlen allein liest in der Hektik niemand.
 struct Uhr: View {
     let rest: Int
@@ -176,25 +190,50 @@ struct Uhr: View {
         return max(0, min(1, Double(rest) / Double(gesamt)))
     }
 
-    private var farbe: Color {
-        rest <= 5 ? Farbe.schlecht : (rest <= 10 ? Color(hex: 0xFFB020) : Farbe.akzent)
+    /// Im Browser bleibt der Balken lila und flackert nur; auf dem Handy hilft
+    /// das letzte Rot, weil man oft nicht so genau hinschaut.
+    private var farbe: Color? {
+        rest <= 5 ? Farbe.schlecht : nil
     }
 
     var body: some View {
-        VStack(spacing: 6) {
-            GeometryReader { raum in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Farbe.grund3)
-                    Capsule().fill(farbe).frame(width: raum.size.width * anteil)
+        Balken(anteil: anteil, farbe: farbe)
+            .animation(.linear(duration: 0.25), value: anteil)
+    }
+}
+
+/// .game-header-top: "RUNDE 3 / 10" (Zahlen lila in DM Mono), Sekunden,
+/// rechts der Verlassen-Knopf.
+struct RundenKopf: View {
+    let runde: Int?
+    let gesamt: Int?
+    let rest: Int
+    let raus: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 6) {
+                Text(L("RUNDE", "ROUND"))
+                    .font(.marke(13, .heavy))
+                    .tracking(0.5)
+                    .foregroundColor(Farbe.gedaempft)
+                if let runde, let gesamt {
+                    Text("\(runde)/\(gesamt)")
+                        .font(.mono(13))
+                        .foregroundColor(Farbe.akzentTief)
                 }
             }
-            .frame(height: 8)
-            .animation(.linear(duration: 0.25), value: anteil)
-
             Text("\(rest)s")
                 .font(.mono(13))
-                .foregroundColor(farbe)
-                .monospacedDigit()
+                .foregroundColor(rest <= 5 ? Farbe.schlecht : Farbe.schrift)
+                .padding(.horizontal, 10)
+                .frame(height: 26)
+                .background(Capsule().fill(Farbe.grund3))
+            Spacer()
+            RausKnopf(aktion: raus)
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
     }
 }

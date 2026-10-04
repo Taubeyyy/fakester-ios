@@ -167,24 +167,45 @@ struct Karte<Inhalt: View>: View {
     }
 }
 
-/// Der Glas-Grund von Karten, Bubbles und dem Profil-Chip (--bg-elev + blur).
+/// Der Glas-Grund von Karten, Bubbles und dem Profil-Chip (--bg-elev).
+/// Bewusst ohne iOS-Material: das legt einen grauen Schleier drueber, den es im
+/// Browser nicht gibt - dort ist der Hintergrund so dunkel, dass blur nichts aufhellt.
 struct Glas: View {
     var radius: CGFloat = 16
     var kante: Color = Farbe.kante
+    var dicke: CGFloat = 1
 
     var body: some View {
         let form = RoundedRectangle(cornerRadius: radius, style: .continuous)
         ZStack {
-            form.fill(.ultraThinMaterial)
             form.fill(Farbe.flaeche)
-            form.strokeBorder(kante, lineWidth: 1)
+            form.strokeBorder(kante, lineWidth: dicke)
+            Lichtkante(radius: radius)
         }
         .shadow(color: Color.black.opacity(0.35), radius: 4, x: 0, y: 2)
     }
 }
 
-/// Der grosse Knopf (.btn-primary .btn-large). Ein Spiel auf Zeit wird mit dem
-/// Daumen bedient, also ist die Trefferflaeche bewusst gross.
+/// --sh-inset: ein Hauch Licht an der Oberkante (inset 0 1px 0 rgba(255,255,255,.06)).
+struct Lichtkante: View {
+    var radius: CGFloat = 16
+    var staerke: Double = 0.08
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: radius, style: .continuous)
+            .strokeBorder(
+                LinearGradient(colors: [Color.white.opacity(staerke), .clear],
+                               startPoint: .top, endPoint: .center),
+                lineWidth: 1
+            )
+            .allowsHitTesting(false)
+    }
+}
+
+/// Der grosse Knopf (.btn-primary .btn-large): Lila-Verlauf ohne Rand, dunkle
+/// Schrift, lila Schein drumherum. Ein Spiel auf Zeit wird mit dem Daumen
+/// bedient, also ist die Trefferflaeche bewusst gross.
+/// farbe: Farbe.kante macht daraus die ruhige Glas-Variante (.btn-secondary).
 struct Hauptknopf: ButtonStyle {
     var farbe: Color = Farbe.akzent
     var aus: Bool = false
@@ -192,38 +213,77 @@ struct Hauptknopf: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         let form = RoundedRectangle(cornerRadius: 16, style: .continuous)
         let lila: Bool = farbe == Farbe.akzent
-        let grund: AnyShapeStyle = aus ? AnyShapeStyle(Farbe.grund4)
-            : (lila ? AnyShapeStyle(Farbe.verlauf) : AnyShapeStyle(farbe))
-        // Gruen (fertig) bekommt dunkle Schrift, gedaempfte Flaechen helle.
-        let schrift: Color = aus ? Farbe.leise
-            : (lila ? Farbe.aufAkzent : (farbe == Farbe.gut ? Color(hex: 0x00220F) : Farbe.schrift))
+        let glas: Bool = farbe == Farbe.kante
+        let grund: AnyShapeStyle = lila ? AnyShapeStyle(Farbe.verlauf)
+            : (glas ? AnyShapeStyle(Farbe.flaeche) : AnyShapeStyle(farbe))
+        let schrift: Color = glas ? Farbe.schrift : (lila ? Farbe.aufAkzent : Color(hex: 0x00220F))
+        let schein: Color = glas ? Color.black.opacity(0.35) : farbe.opacity(0.36)
+        let gedrueckt: Bool = configuration.isPressed && !aus
         return configuration.label
-            .font(.marke(16, .heavy))
+            .font(.marke(15, .heavy))
             .tracking(0.3)
             .foregroundColor(schrift)
             .frame(maxWidth: .infinity)
             .frame(height: 54)
             .background(form.fill(grund))
-            .overlay(form.strokeBorder(Color.white.opacity(aus ? 0.06 : 0.12), lineWidth: 1))
-            .shadow(color: (aus || farbe == Farbe.kante) ? .clear : farbe.opacity(0.36), radius: 10, x: 0, y: 2)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
+            .overlay(form.strokeBorder(glas ? Farbe.kante : Color.clear, lineWidth: 1))
+            .overlay(Lichtkante(radius: 16, staerke: lila ? 0.25 : 0.08))
+            // .btn-primary:hover - Schein waechst und bekommt einen Ring
+            .shadow(color: aus ? .clear : schein, radius: gedrueckt ? 14 : 8, x: 0, y: gedrueckt ? 5 : 2)
+            .overlay(form.stroke(farbe.opacity(gedrueckt && lila ? 0.22 : 0), lineWidth: 3).padding(-1.5))
+            // .btn:disabled - blass und entsaettigt, aber dieselbe Form
+            .saturation(aus ? 0.6 : 1)
+            .opacity(aus ? 0.45 : 1)
+            .scaleEffect(gedrueckt ? 0.98 : 1)
+            .animation(.spring(response: 0.22, dampingFraction: 0.55), value: configuration.isPressed)
     }
 }
 
 /// .btn-secondary .btn-large: Glas mit Kante.
 struct Nebenknopf: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.marke(16, .heavy))
+        let form = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        return configuration.label
+            .font(.marke(15, .heavy))
             .tracking(0.3)
             .foregroundColor(Farbe.schrift)
             .frame(maxWidth: .infinity)
             .frame(height: 54)
-            .background(Glas(radius: 16))
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
+            .background(form.fill(configuration.isPressed ? Farbe.grund4 : Farbe.flaeche))
+            .overlay(form.strokeBorder(configuration.isPressed ? Color.white.opacity(0.22) : Farbe.kante, lineWidth: 1))
+            .overlay(Lichtkante(radius: 16))
+            .shadow(color: Color.black.opacity(0.35), radius: configuration.isPressed ? 12 : 4, x: 0, y: 2)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.spring(response: 0.22, dampingFraction: 0.55), value: configuration.isPressed)
     }
+}
+
+/// Kleiner Pillen-Knopf wie .btn-quit (rot) - fuer "Verlassen" oben rechts.
+struct RausKnopf: View {
+    let aktion: () -> Void
+
+    var body: some View {
+        Button(action: aktion) {
+            HStack(spacing: 6) {
+                Image(systemName: "xmark").font(.system(size: 11, weight: .bold))
+                Text(L("Verlassen", "Leave")).font(.marke(12, .bold))
+            }
+            .foregroundColor(Farbe.schlecht)
+            .padding(.horizontal, 14)
+            .frame(height: 32)
+            .background(Capsule().fill(Farbe.schlecht.opacity(0.08)))
+            .overlay(Capsule().strokeBorder(Farbe.schlecht.opacity(0.22), lineWidth: 1))
+        }
+        .buttonStyle(BubbleDruck())
+    }
+}
+
+/// --grad-gold
+extension Farbe {
+    static let verlaufGold = LinearGradient(colors: [Color(hex: 0xFFBE48), Color(hex: 0xE89211)],
+                                            startPoint: .topLeading, endPoint: .bottomTrailing)
+    static let aufGold = Color(hex: 0x2A1400)
+    static let akzentDim = Color(hex: 0xB15CFF).opacity(0.14)   // --green-dim
 }
 
 extension Text {
