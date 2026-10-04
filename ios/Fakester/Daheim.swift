@@ -16,24 +16,35 @@ struct DaheimAnsicht: View {
     @State private var beitreten = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 14) {
-                kopf
-                AktualisierungsKarte()
-                held
-                spielknoepfe
-                if beitreten { pinKarte.transition(.opacity.combined(with: .move(edge: .top))) }
-                DailyKarte { nurImBrowser("Daily") }
-                kacheln
-                ruhigeKnoepfe
-                StufenKarte()
-                fuss
+        // Der Startbildschirm passt im Browser auf einen Bildschirm, und genau
+        // so soll er sich anfuehlen: alles Wichtige ohne Wischen erreichbar.
+        // Deshalb richtet sich der Zeilenabstand nach der Hoehe, die da ist -
+        // auf einem kleinen Geraet rueckt alles zusammen, statt unten
+        // abzuschneiden. Gescrollt werden kann trotzdem, sonst waere auf einem
+        // SE mit grosser Schrift der Fuss unerreichbar.
+        GeometryReader { geo in
+            let luft: CGFloat = geo.size.height < 700 ? 8 : (geo.size.height < 800 ? 10 : 13)
+            let eng: Bool = geo.size.height < 800
+            ScrollView {
+                VStack(spacing: luft) {
+                    kopf
+                    AktualisierungsKarte()
+                    held(eng: eng)
+                    spielknoepfe
+                    if beitreten { pinKarte.transition(.opacity.combined(with: .move(edge: .top))) }
+                    DailyKarte(eng: eng) { nurImBrowser("Daily") }
+                    kacheln(eng: eng)
+                    ruhigeKnoepfe(eng: eng)
+                    StufenKarte(eng: eng)
+                    fuss
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 16)
+                .frame(minHeight: geo.size.height - 24, alignment: .top)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, 36)
+            .scrollDismissesKeyboard(.interactively)
         }
-        .scrollDismissesKeyboard(.interactively)
     }
 
     private func nurImBrowser(_ was: String) {
@@ -51,13 +62,12 @@ struct DaheimAnsicht: View {
         }
     }
 
-    private var held: some View {
-        VStack(spacing: 6) {
+    private func held(eng: Bool) -> some View {
+        VStack(spacing: 4) {
             Equalizer()
-            Schriftzug(groesse: 52)
+            Schriftzug(groesse: eng ? 44 : 52)
         }
-        .padding(.top, 18)
-        .padding(.bottom, 4)
+        .padding(.top, eng ? 6 : 14)
     }
 
     // MARK: Spielen
@@ -104,20 +114,20 @@ struct DaheimAnsicht: View {
 
     // MARK: Kacheln
 
-    private var kacheln: some View {
-        let spalten: [GridItem] = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
-        return LazyVGrid(columns: spalten, spacing: 10) {
+    private func kacheln(eng: Bool) -> some View {
+        let spalten: [GridItem] = Array(repeating: GridItem(.flexible(), spacing: 9), count: 4)
+        return LazyVGrid(columns: spalten, spacing: 9) {
             ForEach(Kachel.alle) { k in
-                KachelKnopf(kachel: k) { nurImBrowser(k.name) }
+                KachelKnopf(kachel: k, eng: eng) { nurImBrowser(k.name) }
             }
         }
     }
 
-    private var ruhigeKnoepfe: some View {
-        let spalten: [GridItem] = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
-        return LazyVGrid(columns: spalten, spacing: 10) {
+    private func ruhigeKnoepfe(eng: Bool) -> some View {
+        let spalten: [GridItem] = [GridItem(.flexible(), spacing: 9), GridItem(.flexible(), spacing: 9)]
+        return LazyVGrid(columns: spalten, spacing: 9) {
             ForEach(Kachel.ruhige) { k in
-                FlachKnopf(name: k.name, symbol: k.symbol) { nurImBrowser(k.name) }
+                FlachKnopf(name: k.name, symbol: k.symbol, eng: eng) { nurImBrowser(k.name) }
             }
         }
     }
@@ -140,7 +150,7 @@ struct DaheimAnsicht: View {
                 .font(.marke(11))
                 .foregroundColor(Farbe.leise)
         }
-        .padding(.top, 6)
+        .padding(.top, 2)
     }
 }
 
@@ -191,6 +201,7 @@ struct SpotsPille: View {
 }
 
 struct DailyKarte: View {
+    var eng: Bool = false
     let aktion: () -> Void
 
     var body: some View {
@@ -203,7 +214,7 @@ struct DailyKarte: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(Farbe.akzent)
                 }
-                .frame(width: 46, height: 46)
+                .frame(width: eng ? 40 : 46, height: eng ? 40 : 46)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Daily")
@@ -222,7 +233,7 @@ struct DailyKarte: View {
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(Farbe.akzent)
             }
-            .padding(14)
+            .padding(eng ? 11 : 14)
             .frame(maxWidth: .infinity)
             .background(Glas(radius: 16))
         }
@@ -260,6 +271,7 @@ struct Kachel: Identifiable {
 
 struct KachelKnopf: View {
     let kachel: Kachel
+    var eng: Bool = false
     let aktion: () -> Void
 
     var body: some View {
@@ -271,7 +283,7 @@ struct KachelKnopf: View {
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(kachel.farbe)
                 }
-                .frame(width: 42, height: 42)
+                .frame(width: eng ? 36 : 42, height: eng ? 36 : 42)
 
                 Text(kachel.name)
                     .font(.marke(12, .heavy))
@@ -279,7 +291,7 @@ struct KachelKnopf: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
             }
-            .padding(.vertical, 14)
+            .padding(.vertical, eng ? 10 : 14)
             .padding(.horizontal, 4)
             .frame(maxWidth: .infinity)
             .background(
@@ -298,6 +310,7 @@ struct KachelKnopf: View {
 struct FlachKnopf: View {
     let name: String
     let symbol: String
+    var eng: Bool = false
     let aktion: () -> Void
 
     var body: some View {
@@ -313,7 +326,7 @@ struct FlachKnopf: View {
                     .minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(height: eng ? 44 : 50)
             .background(Glas(radius: 16))
         }
         .buttonStyle(BubbleDruck())
@@ -345,6 +358,7 @@ struct FussKnopf: View {
 /// nicht: sie haben kein Konto, also auch keine Stufe - eine Karte voller
 /// Nullen waere nur eine Erinnerung daran.
 struct StufenKarte: View {
+    var eng: Bool = false
     @EnvironmentObject private var api: Api
 
     var body: some View {
@@ -352,8 +366,8 @@ struct StufenKarte: View {
             let xp: Int = k.xp ?? 0
             let stufe: Int = Api.Stufe.fuerXp(xp)
             let fehlt: Int = max(0, Api.Stufe.xpAb(stufe + 1) - xp)
-            Karte(polster: 16) {
-                VStack(spacing: 14) {
+            Karte(polster: eng ? 13 : 16) {
+                VStack(spacing: eng ? 10 : 14) {
                     HStack(spacing: 12) {
                         ZStack {
                             Circle().fill(Farbe.verlauf)
@@ -361,7 +375,7 @@ struct StufenKarte: View {
                                 .font(.marke(19, .black))
                                 .foregroundColor(Farbe.aufAkzent)
                         }
-                        .frame(width: 46, height: 46)
+                        .frame(width: eng ? 40 : 46, height: eng ? 40 : 46)
                         .shadow(color: Farbe.akzent.opacity(0.4), radius: 8)
 
                         Text(L("STUFE \(stufe)", "LEVEL \(stufe)")).etikett()
