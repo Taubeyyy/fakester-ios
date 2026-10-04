@@ -445,3 +445,15 @@ extension Spiel: URLSessionWebSocketDelegate {
         }
     }
 }
+
+#if DEBUG
+extension Spiel {
+    /// Nur fuer die Bildschirmfotos im CI (`-vorschau`, siehe Vorschau.swift):
+    /// spielt mitgeschnittene Server-Nachrichten ab - ohne Verbindung, durch
+    /// genau denselben Weg wie echte Nachrichten.
+    func vorfuehren(als id: String, _ nachrichten: [String]) {
+        eigeneId = id
+        for n in nachrichten { verarbeiten(Data(n.utf8)) }
+    }
+}
+#endif

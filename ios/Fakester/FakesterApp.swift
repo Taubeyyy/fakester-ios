@@ -41,6 +41,9 @@ struct Wurzel: View {
             Text(rauswurfText)
         }
         .task {
+            #if DEBUG
+            Vorschau.abspielen(spiel)
+            #endif
             await api.profilAuffrischen()
             await Aktualisierung.shared.pruefen()
         }
@@ -56,6 +59,21 @@ struct Wurzel: View {
 
     @ViewBuilder
     private var bildschirm: some View {
+        #if DEBUG
+        if Vorschau.szene == "erstellen" {
+            ErstellenAnsicht()
+        } else if Vorschau.szene == "rangliste" {
+            RanglistenAnsicht()
+        } else {
+            spielBildschirm
+        }
+        #else
+        spielBildschirm
+        #endif
+    }
+
+    @ViewBuilder
+    private var spielBildschirm: some View {
         switch spiel.lage {
         case .getrennt:
             if api.ausweis == nil { AnmeldeAnsicht() } else { DaheimAnsicht() }

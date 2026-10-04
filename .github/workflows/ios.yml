@@ -8,6 +8,11 @@ on:
     branches: [main]
     paths: ['ios/**', '.github/workflows/ios.yml']
   workflow_dispatch:
+    inputs:
+      fotos:
+        description: 'Nur Bildschirmfotos aus dem Simulator (kein Release)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -15,6 +20,7 @@ permissions:
 
 jobs:
   build:
+    if: ${{ !inputs.fotos }}
     runs-on: macos-15
     defaults:
       run:
@@ -93,3 +99,68 @@ jobs:
           curl -fsS -X PUT "https://dopa.taubey.com/api/hub/ci/fakester?run=${{ env.BUILD }}&job=build&ok=$OK" \
             -H "Authorization: Bearer $TOKEN" -H "X-Release-Notes: $NOTES" -H "Content-Type: text/plain" \
             --data-binary @"$RUNNER_TEMP/ci.txt" || true
+
+  # Bildschirmfotos der App aus dem iOS-Simulator - zum Nebeneinanderlegen mit
+  # fakester.app. Baut Debug (dort gibt es den Vorschau-Modus aus
+  # ios/Fakester/Vorschau.swift), startet jede Szene einzeln und knipst sie.
+  # Nur von Hand (fotos: true), legt KEIN Release an.
+  fotos:
+    if: ${{ inputs.fotos }}
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Werkzeuge
+        run: brew install xcodegen
+
+      - name: Xcode-Projekt erzeugen
+        run: xcodegen generate
+
+      # 375 x 812 Punkte wie die Webseiten-Aufnahmen - das ist ein iPhone 13 mini.
+      - name: Simulator
+        run: |
+          set -e
+          RT=$(xcrun simctl list runtimes -j | python3 -c 'import sys, json; r = [x for x in json.load(sys.stdin)["runtimes"] if x["platform"] == "iOS" and x["isAvailable"]]; print(r[-1]["identifier"])')
+          DT=com.apple.CoreSimulator.SimDeviceType.iPhone-13-mini
+          xcrun simctl list devicetypes | grep -q "iPhone 13 mini" || DT=com.apple.CoreSimulator.SimDeviceType.iPhone-16
+          echo "Laufzeit $RT, Geraet $DT"
+          UDID=$(xcrun simctl create Foto "$DT" "$RT")
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
+
+      - name: Bauen (Debug, Simulator)
+        run: |
+          set +e
+          xcodebuild -project Fakester.xcodeproj -scheme Fakester \
+            -configuration Debug -sdk iphonesimulator \
+            -destination "id=$UDID" -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CURRENT_PROJECT_VERSION=9999 MARKETING_VERSION=0.1.9999 \
+            build > "$RUNNER_TEMP/bau.log" 2>&1
+          STATUS=$?
+          grep -E "error:|\*\* BUILD" "$RUNNER_TEMP/bau.log" | head -100 || true
+          exit $STATUS
+
+      - name: Knipsen
+        run: |
+          APP=build/Build/Products/Debug-iphonesimulator/Fakester.app
+          xcrun simctl install "$UDID" "$APP"
+          mkdir -p fotos
+          GAST="-gast.id guest-1791131740573-ope1d -gast.name Gast9694"
+          for S in anmeldung daheim erstellen rangliste lobby runde gewaehlt eingeloggt aufloesung ende; do
+            xcrun simctl terminate "$UDID" com.taubey.fakester 2>/dev/null || true
+            if [ "$S" = anmeldung ]; then A=""; else A="$GAST"; fi
+            xcrun simctl launch "$UDID" com.taubey.fakester -vorschau "$S" $A
+            sleep 7
+            xcrun simctl io "$UDID" screenshot "fotos/$S.png"
+          done
+          ls -l fotos
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fotos
+          path: ios/fotos
