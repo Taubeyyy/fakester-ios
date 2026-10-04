@@ -81,8 +81,8 @@ struct HomeView: View {
             // CI screenshots (Screenshots.swift): both dialogs can be opened as
             // a scene of their own. The scene names are fixed by the workflow.
             #if DEBUG
-            if ScreenshotScene.sceneName == "beitreten" { joinGame = true }
-            if ScreenshotScene.sceneName == "gastsperre" { guestGate = true }
+            if ScreenshotScene.sceneName == "join" { joinGame = true }
+            if ScreenshotScene.sceneName == "guest-notice" { guestGate = true }
             #endif
         }
         .task { await checkDailyBonus() }

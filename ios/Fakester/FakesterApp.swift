@@ -57,9 +57,9 @@ struct RootView: View {
     @ViewBuilder
     private var currentScreen: some View {
         #if DEBUG
-        if ScreenshotScene.sceneName == "erstellen" {
+        if ScreenshotScene.sceneName == "create" {
             CreateGameView()
-        } else if ScreenshotScene.sceneName == "rangliste" {
+        } else if ScreenshotScene.sceneName == "leaderboard" {
             LeaderboardView()
         } else {
             gameScreen

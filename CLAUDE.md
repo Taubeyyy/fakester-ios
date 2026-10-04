@@ -65,6 +65,14 @@ ein React-Quelltext existiert nirgends mehr.
   Vorgabe, keine Zierde: `HomeView` misst die Höhe und rückt bei kleinen Geräten zusammen
   (`compact`). Wer dort etwas hinzufügt, prüft, ob es noch passt.
 
+## Prüfen ohne Xcode
+
+- `iOS build` von Hand mit `screenshots: true` starten (kein Release): baut Debug für den Simulator
+  (iPhone 13 mini, 375×812 wie die Web-Aufnahmen), knipst jede Szene aus `ios/Fakester/Screenshots.swift`
+  (echter Mitschnitt einer Runde, nur in Debug) und spielt dann mit `ios/UITests/SmokeTests.swift` ein
+  ganzes Spiel als Gast gegen den echten Server durch. Fotos + Testschritte liegen im Artefakt `screenshots`.
+- Jeder grüne Lauf ohne `screenshots` ist ein öffentliches Release – nur starten, wenn es raus soll.
+
 ## Fallen
 
 - **Serverlesen allein reicht nicht.** Nachrichten-Formate immer an echten Mitschnitten prüfen (`ios/Tests/Capture.swift`).

@@ -1,6 +1,6 @@
-# Baut die iOS-App auf einem Mac-Runner und legt eine TrollStore-fertige .ipa
-# als GitHub-Release ab (Tag build-<Nummer>). Signiert wird nur per ldid mit
-# Entitlements - TrollStore uebernimmt den Rest beim Installieren.
+# Builds the iOS app on a Mac runner and publishes a TrollStore-ready .ipa as a
+# GitHub release (tag build-<number>). Signed only with ldid and entitlements -
+# TrollStore does the rest when installing.
 name: iOS build
 
 on:
@@ -9,18 +9,18 @@ on:
     paths: ['ios/**', '.github/workflows/ios.yml']
   workflow_dispatch:
     inputs:
-      fotos:
-        description: 'Nur Bildschirmfotos aus dem Simulator (kein Release)'
+      screenshots:
+        description: 'Only simulator screenshots and the end-to-end test (no release)'
         type: boolean
         default: false
 
 permissions:
   contents: write
-  id-token: write      # GitHub-OIDC: damit sich der Build beim Server melden kann, ohne Geheimnis
+  id-token: write      # GitHub OIDC: lets the build report to the server without a secret
 
 jobs:
   build:
-    if: ${{ !inputs.fotos }}
+    if: ${{ !inputs.screenshots }}
     runs-on: macos-15
     defaults:
       run:
@@ -28,25 +28,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build-Nummer (neues Repo seit 2026-10-04 → Lauf + 100, damit alte Installationen das Update erkennen)
+      - name: Build number (new repo since 2026-10-04 → run + 100, so old installs recognise the update)
         run: echo "BUILD=$((GITHUB_RUN_NUMBER + 100))" >> "$GITHUB_ENV"
 
-      - name: Werkzeuge
+      - name: Tools
         run: brew install xcodegen ldid
 
-      # Laeuft VOR dem Xcode-Schritt: alles, was ohne Bildschirm pruefbar ist,
-      # soll scheitern, bevor zehn Minuten Buildzeit verbrannt sind. Vor allem
-      # das Dekodieren der Server-Nachrichten - daran stirbt ein Client sonst
-      # erst auf dem Geraet, mitten in einer Runde.
-      - name: Logik-Tests (Protokoll)
+      # Runs BEFORE the Xcode step: everything testable without a screen should
+      # fail before ten minutes of build time are burnt. Above all decoding the
+      # server messages - otherwise a client only dies on the device, mid-round.
+      - name: Logic tests (protocol)
         run: |
           set -o pipefail
           { swiftc -O Shared/*.swift Tests/Capture.swift Tests/main.swift -o /tmp/logic && /tmp/logic; } 2>&1 | tee "$RUNNER_TEMP/build.log"
 
-      - name: Xcode-Projekt erzeugen
+      - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Bauen (unsigniert)
+      - name: Build (unsigned)
         run: |
           set -o pipefail
           xcodebuild -project Fakester.xcodeproj -scheme Fakester \
@@ -58,11 +57,11 @@ jobs:
             CURRENT_PROJECT_VERSION=${{ env.BUILD }} \
             build 2>&1 | tee -a "$RUNNER_TEMP/build.log"
 
-      - name: Mit ldid signieren + IPA packen
+      - name: Sign with ldid + pack the IPA
         run: |
           APP=build/Build/Products/Release-iphoneos/Fakester.app
-          # -I setzt die Signatur-ID auf die Bundle-ID; ohne das nimmt ldid den
-          # Dateinamen, und manche iOS-Dienste pruefen die ID.
+          # -I sets the signing ID to the bundle ID; without it ldid uses the
+          # file name, and some iOS services check the ID.
           ldid -SFakester/Fakester.entitlements -Icom.taubey.fakester "$APP/Fakester"
           ldid -e "$APP/Fakester"
           mkdir -p out/Payload
@@ -75,7 +74,7 @@ jobs:
           name: Fakester-${{ env.BUILD }}
           path: ios/out/Fakester.ipa
 
-      - name: Release anlegen
+      - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -83,8 +82,8 @@ jobs:
             --title "Fakester Build ${{ env.BUILD }}" \
             --notes "Commit ${GITHUB_SHA::7}: $(git log -1 --pretty=%s)"
 
-      # Ergebnis an den Server (Claude-App zeigt den Build-Stand, Claude auf dem Server liest Fehler).
-      - name: Build-Stand an den Server melden
+      # Result to the server (the Claude app shows the build state, Claude on the server reads errors).
+      - name: Report the build state to the server
         if: always()
         env:
           OK: ${{ job.status == 'success' && '1' || '0' }}
@@ -100,12 +99,12 @@ jobs:
             -H "Authorization: Bearer $TOKEN" -H "X-Release-Notes: $NOTES" -H "Content-Type: text/plain" \
             --data-binary @"$RUNNER_TEMP/ci.txt" || true
 
-  # Bildschirmfotos der App aus dem iOS-Simulator - zum Nebeneinanderlegen mit
-  # fakester.app. Baut Debug (dort gibt es den Vorschau-Modus aus
-  # ios/Fakester/Screenshots.swift), startet jede Szene einzeln und knipst sie.
-  # Nur von Hand (fotos: true), legt KEIN Release an.
-  fotos:
-    if: ${{ inputs.fotos }}
+  # Screenshots of the app from the iOS simulator - to put next to fakester.app.
+  # Builds Debug (which has the screenshot scenes from
+  # ios/Fakester/Screenshots.swift), launches each scene and captures it, then
+  # runs the end-to-end test. Manual only (screenshots: true), NO release.
+  screenshots:
+    if: ${{ inputs.screenshots }}
     runs-on: macos-15
     defaults:
       run:
@@ -113,27 +112,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Werkzeuge
+      - name: Tools
         run: brew install xcodegen
 
-      - name: Xcode-Projekt erzeugen
+      - name: Generate Xcode project
         run: xcodegen generate
 
-      # 375 x 812 Punkte wie die Webseiten-Aufnahmen - das ist ein iPhone 13 mini.
+      # 375 x 812 points like the website captures - that is an iPhone 13 mini.
       - name: Simulator
         run: |
           set -e
           RT=$(xcrun simctl list runtimes -j | python3 -c 'import sys, json; r = [x for x in json.load(sys.stdin)["runtimes"] if x["platform"] == "iOS" and x["isAvailable"]]; print(r[-1]["identifier"])')
           DT=com.apple.CoreSimulator.SimDeviceType.iPhone-13-mini
           xcrun simctl list devicetypes | grep -q "iPhone 13 mini" || DT=com.apple.CoreSimulator.SimDeviceType.iPhone-16
-          echo "Laufzeit $RT, Geraet $DT"
-          UDID=$(xcrun simctl create Foto "$DT" "$RT")
+          echo "Runtime $RT, device $DT"
+          UDID=$(xcrun simctl create Shots "$DT" "$RT")
           echo "UDID=$UDID" >> "$GITHUB_ENV"
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
 
-      - name: Bauen (Debug, Simulator)
+      - name: Build (Debug, simulator)
         run: |
           set +e
           xcodebuild -project Fakester.xcodeproj -scheme Fakester \
@@ -145,20 +144,20 @@ jobs:
           grep -E "error:|\*\* BUILD" "$RUNNER_TEMP/bau.log" | head -100 || true
           exit $STATUS
 
-      - name: Knipsen
+      - name: Capture scenes
         run: |
           APP=build/Build/Products/Debug-iphonesimulator/Fakester.app
           xcrun simctl install "$UDID" "$APP"
-          mkdir -p fotos
+          mkdir -p shots
           GAST="-gast.id guest-1791131740573-ope1d -gast.name Gast9694"
-          for S in anmeldung daheim beitreten gastsperre erstellen rangliste lobby runde gewaehlt eingeloggt aufloesung ende; do
+          for S in login home join guest-notice create leaderboard lobby round picked locked-in reveal game-over; do
             xcrun simctl terminate "$UDID" com.taubey.fakester 2>/dev/null || true
-            if [ "$S" = anmeldung ]; then A=""; else A="$GAST"; fi
-            xcrun simctl launch "$UDID" com.taubey.fakester -vorschau "$S" $A
+            if [ "$S" = login ]; then A=""; else A="$GAST"; fi
+            xcrun simctl launch "$UDID" com.taubey.fakester -scene "$S" $A
             sleep 7
-            xcrun simctl io "$UDID" screenshot "fotos/$S.png"
+            xcrun simctl io "$UDID" screenshot "shots/$S.png"
           done
-          ls -l fotos
+          ls -l shots
 
       # Plays one full game as a guest against the live server by tapping
       # through the app (UITests/SmokeTests.swift); screenshots go to e2e/.
@@ -173,13 +172,13 @@ jobs:
             > "$RUNNER_TEMP/test.log" 2>&1
           STATUS=$?
           grep -E "error:|Test Case|Executed|FAIL|XCTAssert|Did not appear" "$RUNNER_TEMP/test.log" | tail -60
-          mkdir -p fotos/e2e
-          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/e2e.xcresult" --output-path fotos/e2e || true
-          ls fotos/e2e | head -60
+          mkdir -p shots/e2e
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/e2e.xcresult" --output-path shots/e2e || true
+          ls shots/e2e | head -60
           exit $STATUS
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: fotos
-          path: ios/fotos
+          name: screenshots
+          path: ios/shots

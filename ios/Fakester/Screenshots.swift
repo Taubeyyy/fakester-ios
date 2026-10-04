@@ -12,7 +12,7 @@ import SwiftUI
 enum ScreenshotScene {
     static var sceneName: String? {
         let a: [String] = ProcessInfo.processInfo.arguments
-        guard let i = a.firstIndex(of: "-vorschau"), i + 1 < a.count else { return nil }
+        guard let i = a.firstIndex(of: "-scene"), i + 1 < a.count else { return nil }
         return a[i + 1]
     }
 
@@ -25,15 +25,15 @@ enum ScreenshotScene {
         switch s {
         case "lobby":
             game.replay(asPlayer: Capture.me, lobby)
-        case "runde":
+        case "round":
             game.replay(asPlayer: Capture.me, activeRound)
-        case "gewaehlt", "eingeloggt":
+        case "picked", "locked-in":
             game.replay(asPlayer: Capture.me, activeRound)
             game.answer = Capture.answer
-            if s == "eingeloggt" { game.lockIn() }
-        case "aufloesung":
+            if s == "locked-in" { game.lockIn() }
+        case "reveal":
             game.replay(asPlayer: Capture.me, reveal)
-        case "ende":
+        case "game-over":
             game.replay(asPlayer: Capture.me, reveal + [Capture.end])
         default:
             break
