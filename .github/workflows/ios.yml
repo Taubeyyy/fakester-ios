@@ -22,6 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Build-Nummer (neues Repo seit 2026-10-04 → Lauf + 100, damit alte Installationen das Update erkennen)
+        run: echo "BUILD=$((GITHUB_RUN_NUMBER + 100))" >> "$GITHUB_ENV"
+
       - name: Werkzeuge
         run: brew install xcodegen ldid
 
@@ -45,8 +48,8 @@ jobs:
             -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            MARKETING_VERSION=0.1.${{ github.run_number }} \
-            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            MARKETING_VERSION=0.1.${{ env.BUILD }} \
+            CURRENT_PROJECT_VERSION=${{ env.BUILD }} \
             build 2>&1 | tee -a "$RUNNER_TEMP/build.log"
 
       - name: Mit ldid signieren + IPA packen
@@ -63,15 +66,15 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Fakester-${{ github.run_number }}
+          name: Fakester-${{ env.BUILD }}
           path: ios/out/Fakester.ipa
 
       - name: Release anlegen
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "build-${{ github.run_number }}" out/Fakester.ipa \
-            --title "Fakester Build ${{ github.run_number }}" \
+          gh release create "build-${{ env.BUILD }}" out/Fakester.ipa \
+            --title "Fakester Build ${{ env.BUILD }}" \
             --notes "Commit ${GITHUB_SHA::7}: $(git log -1 --pretty=%s)"
 
       # Ergebnis an den Server (Claude-App zeigt den Build-Stand, Claude auf dem Server liest Fehler).
@@ -84,9 +87,9 @@ jobs:
             | python3 -c 'import sys, json; print(json.load(sys.stdin).get("value", ""))') || exit 0
           [ -z "$TOKEN" ] && exit 0
           NOTES=$(git log -1 --pretty=%s | python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip()[:200]))')
-          { echo "Build ${{ github.run_number }} – Commit ${GITHUB_SHA::7}: $(git log -1 --pretty=%s)"; echo;
+          { echo "Build ${{ env.BUILD }} – Commit ${GITHUB_SHA::7}: $(git log -1 --pretty=%s)"; echo;
             grep -E "error:|✗|FAIL|\*\* BUILD FAILED" "$RUNNER_TEMP/build.log" | head -150; echo; echo "--- Ende des Protokolls ---";
             tail -120 "$RUNNER_TEMP/build.log"; } > "$RUNNER_TEMP/ci.txt" 2>/dev/null || true
-          curl -fsS -X PUT "https://dopa.taubey.com/api/hub/ci/fakester?run=${{ github.run_number }}&job=build&ok=$OK" \
+          curl -fsS -X PUT "https://dopa.taubey.com/api/hub/ci/fakester?run=${{ env.BUILD }}&job=build&ok=$OK" \
             -H "Authorization: Bearer $TOKEN" -H "X-Release-Notes: $NOTES" -H "Content-Type: text/plain" \
             --data-binary @"$RUNNER_TEMP/ci.txt" || true

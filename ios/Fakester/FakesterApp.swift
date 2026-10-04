@@ -55,6 +55,10 @@ struct Wurzel: View {
         }
         .task {
             await api.profilAuffrischen()
+            await Aktualisierung.shared.pruefen()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            Task { await Aktualisierung.shared.pruefen() }
         }
         // Schuetteln = Feedback an den Entwickler, egal wo
         .onReceive(NotificationCenter.default.publisher(for: .geschuettelt)) { _ in rueckmeldung = true }

@@ -16,6 +16,8 @@ struct AnmeldeAnsicht: View {
             VStack(spacing: 22) {
                 Schriftzug().padding(.top, 48)
 
+                AktualisierungsKarte()
+
                 Text("Rate den Song, schlag die Runde.")
                     .font(.system(size: 15, weight: .medium, design: .rounded))
                     .foregroundColor(Farbe.gedaempft)
