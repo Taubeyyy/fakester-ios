@@ -1,0 +1,74 @@
+# Baut die iOS-App auf einem Mac-Runner und legt eine TrollStore-fertige .ipa
+# als GitHub-Release ab (Tag build-<Nummer>). Signiert wird nur per ldid mit
+# Entitlements - TrollStore uebernimmt den Rest beim Installieren.
+name: iOS build
+
+on:
+  push:
+    branches: [main]
+    paths: ['ios/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Werkzeuge
+        run: brew install xcodegen ldid
+
+      # Laeuft VOR dem Xcode-Schritt: alles, was ohne Bildschirm pruefbar ist,
+      # soll scheitern, bevor zehn Minuten Buildzeit verbrannt sind. Vor allem
+      # das Dekodieren der Server-Nachrichten - daran stirbt ein Client sonst
+      # erst auf dem Geraet, mitten in einer Runde.
+      - name: Logik-Tests (Protokoll)
+        run: |
+          swiftc -O Shared/*.swift Tests/Mitschnitt.swift Tests/main.swift -o /tmp/logic
+          /tmp/logic
+
+      - name: Xcode-Projekt erzeugen
+        run: xcodegen generate
+
+      - name: Bauen (unsigniert)
+        run: |
+          set -o pipefail
+          xcodebuild -project Fakester.xcodeproj -scheme Fakester \
+            -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            MARKETING_VERSION=0.1.${{ github.run_number }} \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            build
+
+      - name: Mit ldid signieren + IPA packen
+        run: |
+          APP=build/Build/Products/Release-iphoneos/Fakester.app
+          # -I setzt die Signatur-ID auf die Bundle-ID; ohne das nimmt ldid den
+          # Dateinamen, und manche iOS-Dienste pruefen die ID.
+          ldid -SFakester/Fakester.entitlements -Icom.taubey.fakester "$APP/Fakester"
+          ldid -e "$APP/Fakester"
+          mkdir -p out/Payload
+          cp -R "$APP" out/Payload/
+          (cd out && zip -qry Fakester.ipa Payload)
+          ls -lh out/Fakester.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Fakester-${{ github.run_number }}
+          path: ios/out/Fakester.ipa
+
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${{ github.run_number }}" out/Fakester.ipa \
+            --title "Fakester Build ${{ github.run_number }}" \
+            --notes "Commit ${GITHUB_SHA::7}: $(git log -1 --pretty=%s)"

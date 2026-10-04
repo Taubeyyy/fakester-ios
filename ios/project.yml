@@ -1,0 +1,56 @@
+# XcodeGen-Beschreibung — daraus erzeugt der Mac-Runner Fakester.xcodeproj.
+# Kein Xcode auf Windows noetig; siehe .github/workflows/ios.yml
+name: Fakester
+options:
+  bundleIdPrefix: com.taubey
+  deploymentTarget:
+    iOS: "16.2"            # Edwins Geraet laeuft auf 16.4.1
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"     # CI setzt 0.1.<Build-Nummer>
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+targets:
+  Fakester:
+    type: application
+    platform: iOS
+    sources: [Fakester, Shared]
+    info:
+      path: Fakester/Info.plist
+      properties:
+        CFBundleDisplayName: Fakester
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        LSRequiresIPhoneOS: true
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        # Der Ton ist das Spiel. Ohne audio laeuft die Vorschau nicht weiter,
+        # sobald das Geraet gesperrt wird oder jemand kurz rauswischt - und eine
+        # Runde, die beim Blick auf eine Nachricht verstummt, ist verloren.
+        UIBackgroundModes: [audio]
+        # Das Spiel laeuft ueber HTTPS; die Ausnahme gilt nur fuer die
+        # Vorschau-Schnipsel, die Apple/Deezer teils ueber http ausliefern.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoadsInMedia: true
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        UIUserInterfaceStyle: Dark
+        CFBundleURLTypes:
+          - CFBundleURLName: com.taubey.fakester
+            CFBundleURLSchemes: [fakester]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.taubey.fakester
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: Fakester/Fakester.entitlements
+schemes:
+  Fakester:
+    build:
+      targets:
+        Fakester: all
