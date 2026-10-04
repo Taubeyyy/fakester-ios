@@ -160,7 +160,26 @@ jobs:
           done
           ls -l fotos
 
+      # Plays one full game as a guest against the live server by tapping
+      # through the app (UITests/SmokeTests.swift); screenshots go to e2e/.
+      - name: End-to-end test
+        run: |
+          set +e
+          xcodebuild test -project Fakester.xcodeproj -scheme Fakester \
+            -configuration Debug -sdk iphonesimulator \
+            -destination "id=$UDID" -derivedDataPath build \
+            -resultBundlePath "$RUNNER_TEMP/e2e.xcresult" \
+            CODE_SIGNING_ALLOWED=NO CURRENT_PROJECT_VERSION=9999 MARKETING_VERSION=0.1.9999 \
+            > "$RUNNER_TEMP/test.log" 2>&1
+          STATUS=$?
+          grep -E "error:|Test Case|Executed|FAIL|XCTAssert|Did not appear" "$RUNNER_TEMP/test.log" | tail -60
+          mkdir -p fotos/e2e
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/e2e.xcresult" --output-path fotos/e2e || true
+          ls fotos/e2e | head -60
+          exit $STATUS
+
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: fotos
           path: ios/fotos
