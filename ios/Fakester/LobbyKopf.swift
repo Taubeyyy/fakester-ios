@@ -70,7 +70,7 @@ struct LobbyAnsicht: View {
         if spiel.binIchHost && spiel.spieler.count > 1 && !rausGewarnt {
             rausGewarnt = true
             Spuerbar.tipp()
-            spiel.meldung = L("Gehen schließt die Lobby – nochmal tippen", "Leaving closes the lobby — tap back again")
+            spiel.meldung = "Leaving closes the lobby — tap back again"
             Task { @MainActor in
                 try? await Task.sleep(nanoseconds: 4_000_000_000)
                 rausGewarnt = false
@@ -93,7 +93,7 @@ struct LobbyAnsicht: View {
                 Image(systemName: "person.2")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(Farbe.gedaempft)
-                Text(L("SPIELER (\(spiel.spieler.count))", "PLAYERS (\(spiel.spieler.count))"))
+                Text("PLAYERS (\(spiel.spieler.count))")
                     .font(.marke(11, .bold))
                     .tracking(1.1)
                     .foregroundColor(Farbe.gedaempft)
@@ -174,7 +174,7 @@ struct LobbyAnsicht: View {
             HStack(spacing: 6) {
                 Image(systemName: "person.badge.plus")
                     .font(.system(size: 12, weight: .medium))
-                Text(L("Spieler einladen", "Invite players"))
+                Text("Invite players")
                     .font(.marke(13, .bold))
                     .lineLimit(1)
             }
@@ -195,7 +195,7 @@ struct LobbyAnsicht: View {
             HStack(spacing: 8) {
                 Image(systemName: "play.fill")
                     .font(.system(size: 14))
-                Text(L("Spiel starten", "Start Game"))
+                Text("Start Game")
                     .lineLimit(1)
             }
         }
@@ -208,7 +208,7 @@ struct LobbyAnsicht: View {
         return HStack(spacing: 8) {
             Image(systemName: "clock")
                 .font(.system(size: 13, weight: .medium))
-            Text(L("Warten, bis der Host startet…", "Waiting for the host to start…"))
+            Text("Waiting for the host to start…")
                 .font(.marke(14, .bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
@@ -317,7 +317,7 @@ struct PinKarte: View {
         HStack(spacing: 6) {
             Image(systemName: "number")
                 .font(.system(size: 10, weight: .semibold))
-            Text(L("SPIEL-PIN", "GAME PIN"))
+            Text("GAME PIN")
                 .font(.marke(10, .bold))
                 .tracking(1)
                 .lineLimit(1)
@@ -341,12 +341,12 @@ struct PinKarte: View {
 
     private var knopfReihe: some View {
         HStack(spacing: 8) {
-            kleinerKnopf(offen ? L("Verstecken", "Hide") : L("Aufdecken", "Reveal"),
+            kleinerKnopf(offen ? "Hide" : "Reveal",
                          offen ? "eye.slash" : "eye", gruen: false) {
                 umschalten()
             }
             if !pin.isEmpty {
-                kleinerKnopf(kopiert ? L("Kopiert", "Copied") : L("Kopieren", "Copy"),
+                kleinerKnopf(kopiert ? "Copied" : "Copy",
                              kopiert ? "checkmark" : "square.on.square", gruen: kopiert) {
                     kopieren()
                 }
@@ -355,7 +355,7 @@ struct PinKarte: View {
                 HStack(spacing: 6) {
                     Image(systemName: "qrcode")
                         .font(.system(size: 11, weight: .medium))
-                    Text(L("Einladen", "Invite"))
+                    Text("Invite")
                         .font(.marke(11, .bold))
                         .lineLimit(1)
                 }
@@ -557,13 +557,13 @@ struct FreierPlatz: View {
         return VStack(spacing: 6) {
             symbol
             VStack(spacing: 0) {
-                Text(L("FREIER", "OPEN"))
+                Text("OPEN")
                     .font(.marke(10, .bold))
                     .frame(height: 15)
-                Text(L("PLATZ", "SLOT"))
+                Text("SLOT")
                     .font(.marke(10, .bold))
                     .frame(height: 15)
-                Text(L("Einladen…", "Invite…"))
+                Text("Invite…")
                     .font(.marke(10))
                     .frame(height: 15)
             }
@@ -649,7 +649,7 @@ private struct LobbyChatKarte: View {
             Image(systemName: "dot.radiowaves.left.and.right")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(KopfFarbe.leerSymbol)
-            Text(L("Warten auf Spieler…", "Waiting for players…"))
+            Text("Waiting for players…")
                 .font(.marke(11))
                 .foregroundColor(Farbe.gedaempft)
         }
@@ -768,7 +768,7 @@ private struct LobbyChatKarte: View {
         let frisch: [Date] = gesendet.filter { jetzt.timeIntervalSince($0) < 4 }
         if frisch.count >= 5 {
             gesendet = frisch
-            spiel.meldung = L("Mal langsam", "Slow down a moment")
+            spiel.meldung = "Slow down a moment"
             return
         }
         gesendet = frisch + [jetzt]
@@ -846,7 +846,7 @@ private struct EinladeBlatt: View {
                         .tracking(1)
                         .foregroundColor(Farbe.akzent)
                         .lineLimit(1)
-                    Text(L("Spieler einladen", "Invite players"))
+                    Text("Invite players")
                         .font(.marke(18, .heavy))
                         .foregroundColor(Farbe.schrift)
                         .lineLimit(1)
@@ -875,11 +875,10 @@ private struct EinladeBlatt: View {
         return HStack(spacing: 12) {
             qrFeld
             VStack(alignment: .leading, spacing: 4) {
-                Text(L("Scannen und mitspielen", "Scan to join"))
+                Text("Scan to join")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(Farbe.schrift)
-                Text(L("Öffnet fakester.app und bringt sie direkt in diese Lobby – ohne PIN-Eintippen.",
-                       "Opens fakester.app and drops them straight into this lobby — no PIN to type."))
+                Text("Opens fakester.app and drops them straight into this lobby — no PIN to type.")
                     .font(.system(size: 11))
                     .foregroundColor(Farbe.gedaempft)
                     .lineSpacing(2)
@@ -931,7 +930,7 @@ private struct EinladeBlatt: View {
                 HStack(spacing: 6) {
                     Image(systemName: kopiert ? "checkmark" : "square.on.square")
                         .font(.system(size: 12, weight: .medium))
-                    Text(kopiert ? L("Kopiert", "Copied") : L("Kopieren", "Copy"))
+                    Text(kopiert ? "Copied" : "Copy")
                         .font(.system(size: 12, weight: .bold))
                         .lineLimit(1)
                 }
@@ -969,7 +968,7 @@ private struct EinladeBlatt: View {
             HStack(spacing: 8) {
                 Image(systemName: "person.2")
                     .font(.system(size: 9, weight: .medium))
-                Text(L("DEINE FREUNDE", "YOUR FRIENDS"))
+                Text("YOUR FRIENDS")
                     .font(.system(size: 10, weight: .bold))
                     .tracking(1)
                     .lineLimit(1)
@@ -977,8 +976,7 @@ private struct EinladeBlatt: View {
             .foregroundColor(Farbe.gedaempft)
             .padding(.top, 4)
 
-            Text(L("Noch keine Freunde – füge jemanden im Friends-Bereich hinzu oder schick ihnen einfach den Link oben.",
-                   "No friends added yet — add someone on the Friends screen, or just send them the link above."))
+            Text("No friends added yet — add someone on the Friends screen, or just send them the link above.")
                 .font(.system(size: 11))
                 .foregroundColor(Farbe.gedaempft)
                 .lineSpacing(3)

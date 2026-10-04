@@ -81,7 +81,7 @@ struct SpielerKarte: View {
         HStack(spacing: 2) {
             Image(systemName: "crown")
                 .font(.system(size: 6, weight: .semibold))
-            Text(L("ERSTELLER", "CREATOR"))
+            Text("CREATOR")
                 .font(.marke(8, .bold))
                 .lineLimit(1)
         }
@@ -92,7 +92,7 @@ struct SpielerKarte: View {
     @ViewBuilder
     private var zusatz: some View {
         if !spieler.isConnected {
-            Text(L("VERBINDET NEU…", "RECONNECTING…"))
+            Text("RECONNECTING…")
                 .font(.marke(9, .bold))
                 .tracking(0.45)
                 .foregroundColor(KartenFarbe.bernstein)
@@ -199,8 +199,8 @@ struct SpielerZeile: View {
 
             if istHost { Abzeichen("HOST", Farbe.gold) }
             if spieler.isBot { Abzeichen("BOT", Farbe.kante) }
-            if !spieler.isConnected { Abzeichen(L("WEG", "AWAY"), Farbe.schlecht) }
-            if spieler.watchOnly { Abzeichen(L("SCHAUT ZU", "WATCHING"), Farbe.kante) }
+            if !spieler.isConnected { Abzeichen("AWAY", Farbe.schlecht) }
+            if spieler.watchOnly { Abzeichen("WATCHING", Farbe.kante) }
 
             Spacer(minLength: 4)
 
@@ -322,7 +322,7 @@ struct LadeAnsicht: View {
                     .id(z)
             } else {
                 ProgressView().tint(Farbe.akzent).scaleEffect(1.3)
-                Text(spiel.ladetext.isEmpty ? L("Songs werden geladen…", "Loading songs…") : spiel.ladetext)
+                Text(spiel.ladetext.isEmpty ? "Loading songs…" : spiel.ladetext)
                     .font(.marke(15, .semibold))
                     .foregroundColor(Farbe.schrift)
 
@@ -330,7 +330,7 @@ struct LadeAnsicht: View {
                     VStack(spacing: 6) {
                         Balken(anteil: Double(l.checked) / Double(l.total))
                             .frame(width: 220)
-                        Text(L("\(l.playable) spielbar von \(l.checked) geprüft", "\(l.playable) playable of \(l.checked) checked"))
+                        Text("\(l.playable) playable of \(l.checked) checked")
                             .font(.mono(12, fett: false))
                             .foregroundColor(Farbe.gedaempft)
                     }
@@ -365,9 +365,9 @@ struct Balken: View {
 enum Benennung {
     static func rateArt(_ k: String) -> String {
         switch k {
-        case "title":  return L("Titel", "Title")
-        case "artist": return L("Interpret", "Artist")
-        case "year":   return L("Jahr", "Year")
+        case "title":  return "Title"
+        case "artist": return "Artist"
+        case "year":   return "Year"
         default:       return k
         }
     }

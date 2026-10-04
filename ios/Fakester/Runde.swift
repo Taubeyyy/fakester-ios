@@ -42,7 +42,7 @@ struct RundenAnsicht: View {
     private var kopf: some View {
         HStack(spacing: 10) {
             HStack(spacing: 4) {
-                Text(L("RUNDE", "ROUND"))
+                Text("ROUND")
                     .font(.marke(13, .heavy)).tracking(0.8)
                     .foregroundColor(Farbe.akzent)
                 Text("\(spiel.runde?.round ?? 0)")
@@ -134,15 +134,15 @@ struct RundenAnsicht: View {
     }
 
     private func knopfText(_ fehlend: [String]) -> String {
-        if spiel.abgegeben { return L("Antwort ändern", "Change answer") }
-        if fehlend.isEmpty { return L("Antwort abgeben", "Lock in answer") }
+        if spiel.abgegeben { return "Change answer" }
+        if fehlend.isEmpty { return "Lock in answer" }
         let worte: [String] = fehlend.map { Benennung.rateArt($0).lowercased() }
-        return L("Noch wählen: \(liste(worte))", "Pick \(liste(worte))")
+        return "Pick \(liste(worte))"
     }
 
     private func liste(_ w: [String]) -> String {
         guard w.count > 1 else { return w.first ?? "" }
-        let und: String = L(" und ", " & ")
+        let und: String = " & "
         return w.dropLast().joined(separator: ", ") + und + (w.last ?? "")
     }
 }
@@ -231,7 +231,7 @@ struct Abspielkarte: View {
         Karte(polster: 14) {
             VStack(spacing: 12) {
                 HStack {
-                    Text(L("Läuft gerade", "Now playing"))
+                    Text("Now playing")
                         .font(.marke(12, .heavy))
                         .foregroundColor(Farbe.akzent)
                     Spacer()

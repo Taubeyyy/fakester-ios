@@ -268,7 +268,7 @@ struct RausKnopf: View {
         Button(action: aktion) {
             HStack(spacing: 6) {
                 Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
-                Text(L("Verlassen", "Leave")).font(.marke(11, .bold))
+                Text("Leave").font(.marke(11, .bold))
             }
             .foregroundColor(Farbe.schlecht)
             .padding(.horizontal, 12)

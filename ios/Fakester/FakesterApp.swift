@@ -22,20 +22,17 @@ struct Wurzel: View {
     @EnvironmentObject private var api: Api
     @EnvironmentObject private var spiel: Spiel
     @State private var rueckmeldung = false
-    @AppStorage(Sprache.schluessel) private var sprache: String = ""
 
     var body: some View {
         ZStack {
             Buehne()
-            // .id: nach dem Sprachwechsel alles neu bauen, sonst bleiben
-            // Ansichten mit den alten Texten stehen.
-            bildschirm.id(sprache)
+            bildschirm
         }
         .animation(.easeInOut(duration: 0.22), value: spiel.lage)
         // Der Server redet mit kurzen Hinweisen ("Game not found!"), und die
         // gehen sonst unter.
         .overlay(alignment: .top) { Durchsage() }
-        .alert(L("Rausgeflogen", "Kicked"), isPresented: .constant(spiel.rauswurf != nil)) {
+        .alert("Kicked", isPresented: .constant(spiel.rauswurf != nil)) {
             Button("Ok") { spiel.verlassen() }
         } message: {
             Text(rauswurfText)
@@ -78,7 +75,7 @@ struct Wurzel: View {
         case .getrennt:
             if api.ausweis == nil { AnmeldeAnsicht() } else { DaheimAnsicht() }
         case .verbinde:
-            Warten(text: L("Verbinde…", "Connecting…"))
+            Warten(text: "Connecting…")
         case .lobby:
             LobbyAnsicht()
         case .laedt:
@@ -95,10 +92,10 @@ struct Wurzel: View {
     private var rauswurfText: String {
         guard let r = spiel.rauswurf else { return "" }
         var zeilen: [String] = []
-        if r.banned { zeilen.append(L("Du bist gesperrt.", "You are banned.")) }
+        if r.banned { zeilen.append("You are banned.") }
         if let g = r.reason, !g.isEmpty { zeilen.append(g) }
-        if let m = r.minutesLeft { zeilen.append(L("Noch \(m) Minuten.", "\(m) minutes left.")) }
-        return zeilen.isEmpty ? L("Der Gastgeber hat dich entfernt.", "The host removed you.") : zeilen.joined(separator: "\n")
+        if let m = r.minutesLeft { zeilen.append("\(m) minutes left.") }
+        return zeilen.isEmpty ? "The host removed you." : zeilen.joined(separator: "\n")
     }
 }
 

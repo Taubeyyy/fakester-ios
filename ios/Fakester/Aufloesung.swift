@@ -31,7 +31,7 @@ struct AufloesungAnsicht: View {
 
             HStack(spacing: 9) {
                 Wellen(farbe: Farbe.akzent)
-                Text(L("Gleich geht es weiter…", "Next round coming up…"))
+                Text("Next round coming up…")
                     .font(.marke(13, .semibold))
                     .foregroundColor(Farbe.leise)
             }
@@ -45,13 +45,13 @@ struct AufloesungAnsicht: View {
 
     private var kopf: some View {
         HStack(spacing: 8) {
-            Text(L("RUNDE", "ROUND"))
+            Text("ROUND")
                 .font(.marke(13, .heavy)).tracking(0.8)
                 .foregroundColor(Farbe.akzent)
             Text("\(spiel.runde?.round ?? 0)")
                 .font(.marke(13, .black))
                 .foregroundColor(Farbe.schrift)
-            Text("/ \(spiel.runde?.totalRounds ?? 0) · \(L("Auflösung", "Results"))")
+            Text("/ \(spiel.runde?.totalRounds ?? 0) · \("Results")")
                 .font(.marke(13, .heavy))
                 .foregroundColor(Farbe.leise)
             Spacer(minLength: 0)
@@ -66,8 +66,7 @@ struct AufloesungAnsicht: View {
         Karte {
             VStack(alignment: .leading, spacing: 6) {
                 Text("SNEAKY MODE").etikett()
-                Text(L("Der Song bleibt diesmal verdeckt. Alles kommt am Ende auf einmal.",
-                       "The song stays hidden. Everything drops at the end."))
+                Text("The song stays hidden. Everything drops at the end.")
                     .font(.marke(14, .medium))
                     .foregroundColor(Farbe.schrift)
                     .fixedSize(horizontal: false, vertical: true)
@@ -97,7 +96,7 @@ struct EnthuelltKarte: View {
                 .padding(.bottom, 7)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(L("AUFGELÖST", "NOW REVEALED")).etikett()
+                    Text("NOW REVEALED").etikett()
                     Text(titel.title)
                         .font(.marke(21, .black))
                         .foregroundColor(Farbe.schrift)
@@ -125,7 +124,7 @@ struct EigeneRunde: View {
             Karte(polster: 14) {
                 VStack(spacing: 12) {
                     HStack(spacing: 10) {
-                        Text(L("DEINE RUNDE", "YOUR ROUND")).etikett()
+                        Text("YOUR ROUND").etikett()
                         Spacer(minLength: 0)
                         Text(blatt.total > 0 ? "+\(blatt.total)" : "+0")
                             .font(.marke(15, .black))
@@ -177,7 +176,7 @@ struct EigeneRunde: View {
             if let richtig, !sass {
                 // Nur bei einem Fehler lohnt der Vergleich. Bei einem Treffer
                 // waere "Api → Api" nur Rauschen.
-                Text(eigene?.isEmpty == false ? (eigene ?? "") : L("KEINE ANTWORT", "NO ANSWER"))
+                Text(eigene?.isEmpty == false ? (eigene ?? "") : "NO ANSWER")
                     .font(.marke(12, .semibold))
                     .foregroundColor(Farbe.leise)
                     .strikethrough(eigene?.isEmpty == false)
@@ -214,7 +213,7 @@ struct Rangliste: View {
     var body: some View {
         Karte(polster: 14) {
             VStack(alignment: .leading, spacing: 10) {
-                Text(L("STAND", "SCOREBOARD")).etikett()
+                Text("SCOREBOARD").etikett()
                 ForEach(Array(spieler.enumerated()), id: \.element.id) { platz, s in
                     PlatzZeile(platz: platz + 1, spieler: s,
                                binIch: s.id.text == eigeneId,
@@ -251,7 +250,7 @@ struct PlatzZeile: View {
                 .lineLimit(1)
 
             if istHost { Marke(text: "HOST", farbe: Farbe.akzent) }
-            if !spieler.isConnected { Marke(text: L("WEG", "AWAY"), farbe: Farbe.schlecht) }
+            if !spieler.isConnected { Marke(text: "AWAY", farbe: Farbe.schlecht) }
 
             Spacer(minLength: 4)
 
@@ -288,11 +287,11 @@ struct EndeAnsicht: View {
                     Spuerbar.tipp()
                     spiel.zurueckInDieLobby()
                 } label: {
-                    Label(L("Zurück in die Lobby", "Back to lobby"), systemImage: "arrow.uturn.left")
+                    Label("Back to lobby", systemImage: "arrow.uturn.left")
                 }
                 .buttonStyle(Hauptknopf())
 
-                Button(L("Verlassen", "Main menu")) { spiel.verlassen() }
+                Button("Main menu") { spiel.verlassen() }
                     .buttonStyle(Nebenknopf())
             }
             .padding(.horizontal, 16)
@@ -318,13 +317,13 @@ struct EndeAnsicht: View {
                 .shadow(color: Farbe.akzent.opacity(0.35), radius: 18, y: 6)
 
             HStack(spacing: 5) {
-                Text(L("Du wurdest", "You finished"))
+                Text("You finished")
                     .foregroundColor(Farbe.leise)
                 Text("#\(eigenerPlatz)")
                     .foregroundColor(Farbe.akzent)
-                Text(L("mit", "with"))
+                Text("with")
                     .foregroundColor(Farbe.leise)
-                Text(L("\(spiel.ich?.score ?? 0) Punkten", "\(spiel.ich?.score ?? 0) pts"))
+                Text("\(spiel.ich?.score ?? 0) pts")
                     .foregroundColor(Farbe.akzent)
             }
             .font(.marke(13, .heavy))
@@ -339,10 +338,9 @@ struct EndeAnsicht: View {
                     Image(systemName: "person.crop.circle.badge.exclamationmark")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(Farbe.gold)
-                    Text(L("Als Gast gespielt", "Playing as a guest")).etikett()
+                    Text("Playing as a guest").etikett()
                 }
-                Text(L("Diese Runde wurde nicht gespeichert. Mit einem Konto wäre sie es wert gewesen.",
-                       "This round was not saved. With an account it would have counted."))
+                Text("This round was not saved. With an account it would have counted.")
                     .font(.marke(13, .medium))
                     .foregroundColor(Farbe.gedaempft)
                     .fixedSize(horizontal: false, vertical: true)
@@ -393,7 +391,7 @@ struct Songliste: View {
                     Image(systemName: "eye")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(Farbe.akzent)
-                    Text(L("WAS LIEF", "WHAT WAS PLAYING")).etikett()
+                    Text("WHAT WAS PLAYING").etikett()
                 }
                 ForEach(Array(lieder.enumerated()), id: \.offset) { i, t in
                     HStack(spacing: 10) {

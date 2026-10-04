@@ -123,7 +123,7 @@ struct DaheimAnsicht: View {
     }
 
     private func nurImBrowser(_ was: String) {
-        spiel.meldung = L("\(was) gibt's bisher nur im Browser.", "\(was) is browser-only for now.")
+        spiel.meldung = "\(was) is browser-only for now."
     }
 
     private func pinBetreten() {
@@ -228,7 +228,7 @@ struct DaheimAnsicht: View {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.right.to.line")
                         .font(.system(size: 13, weight: .medium))
-                    Text(L("Beitreten", "Join"))
+                    Text("Join")
                 }
             }
             .buttonStyle(BeitretenStil(hoehe: m.knopf))
@@ -246,7 +246,7 @@ struct DaheimAnsicht: View {
                     .offset(x: 1)
             }
             .frame(width: 22, height: 22)
-            Text(L("Spiel erstellen", "Create Game"))
+            Text("Create Game")
         }
     }
 
@@ -275,7 +275,7 @@ struct DaheimAnsicht: View {
     /// App: Feedback) und die leise Versions-Pille (in der App: Sprache).
     private func fuss(_ m: Dichte) -> some View {
         HStack(spacing: 10) {
-            FussKnopf(name: L("Abmelden", "Logout"), symbol: "rectangle.portrait.and.arrow.right") {
+            FussKnopf(name: "Logout", symbol: "rectangle.portrait.and.arrow.right") {
                 api.abmelden()
             }
             FussKnopf(name: "Feedback", symbol: "bubble.left.and.bubble.right",
@@ -615,7 +615,7 @@ struct OnlineZeile: View {
                 if z.lobbies > 0 {
                     Rectangle().fill(Farbe.linie).frame(width: 1, height: 12)
                     (Text(tausender(z.lobbies)).font(.marke(11, .semibold)).foregroundColor(Farbe.schrift)
-                     + Text(L(" Lobbys", " lobbies")))
+                     + Text(" lobbies"))
                 }
             }
         }
@@ -669,7 +669,7 @@ struct DailyKarte: View {
                         .font(.marke(14, .bold))
                         .foregroundColor(Farbe.schrift)
                         .frame(height: 21)
-                    Text(L("Fünf Songs für alle. Ein Versuch.", "Same five songs for everyone. One try."))
+                    Text("Same five songs for everyone. One try.")
                         .font(.marke(11, .medium))
                         .foregroundColor(DaheimFarbe.zart)
                         .lineLimit(1)
@@ -706,7 +706,7 @@ struct Kachel: Identifiable {
     static var alle: [Kachel] {
         [
             Kachel(id: "shop", name: "Shop", symbol: "bag", farbe: Farbe.kachelLila),
-            Kachel(id: "path", name: L("Pfad", "Path"), symbol: "map", farbe: Farbe.kachelGold),
+            Kachel(id: "path", name: "Path", symbol: "map", farbe: Farbe.kachelGold),
             Kachel(id: "quests", name: "Quests", symbol: "checklist", farbe: Farbe.kachelGruen),
             Kachel(id: "style", name: "Style", symbol: "paintpalette", farbe: Farbe.kachelRosa)
         ]
@@ -715,10 +715,10 @@ struct Kachel: Identifiable {
     /// Die vier ruhigen darunter.
     static var ruhige: [Kachel] {
         [
-            Kachel(id: "board", name: L("Rangliste", "Board"), symbol: "chart.bar"),
-            Kachel(id: "friends", name: L("Freunde", "Friends"), symbol: "person.2"),
+            Kachel(id: "board", name: "Board", symbol: "chart.bar"),
+            Kachel(id: "friends", name: "Friends", symbol: "person.2"),
             Kachel(id: "playlists", name: "Playlists", symbol: "bookmark"),
-            Kachel(id: "settings", name: L("Einstellungen", "Settings"), symbol: "gearshape")
+            Kachel(id: "settings", name: "Settings", symbol: "gearshape")
         ]
     }
 }
@@ -829,20 +829,16 @@ struct FussKnopf: View {
     }
 }
 
-/// Die dritte Pille im Fuss sieht aus wie die Versions-Pille des Browsers
-/// (rgba(24,23,39,.55), #5c5b7d, 11 pt) und schaltet die Sprache um.
+/// The quiet version pill at the end of the footer, like the browser's
+/// (rgba(24,23,39,.55), #5c5b7d, 11 pt): sparkles + "v<app version>".
 private struct SprachPille: View {
-    @AppStorage(Sprache.schluessel) private var sprache: String = ""
-
     var body: some View {
-        let englisch: Bool = Sprache.aktuell == .en
-        FussKnopf(name: englisch ? "Deutsch" : "English", symbol: "globe",
+        let version: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        FussKnopf(name: "v" + version, symbol: "sparkles",
                   farbe: Color(hex: 0x5C5B7D),
                   grund: DaheimFarbe.version,
                   kante: Color.white.opacity(0.06),
-                  symbolGroesse: 10, schrift: 11, polster: 12, abstand: 6) {
-            sprache = (englisch ? Sprache.de : Sprache.en).rawValue
-        }
+                  symbolGroesse: 10, schrift: 11, polster: 12, abstand: 6) {}
     }
 }
 
@@ -870,9 +866,9 @@ struct StufenKarte: View {
 
                 VStack(spacing: 6) {
                     HStack(spacing: 12) {
-                        Text(L("STUFE \(stufe)", "LEVEL \(stufe)")).etikett()
+                        Text("LEVEL \(stufe)").etikett()
                         Spacer(minLength: 0)
-                        Text(L("\(tausender(fehlt)) XP bis \(stufe + 1)", "\(tausender(fehlt)) XP to \(stufe + 1)"))
+                        Text("\(tausender(fehlt)) XP to \(stufe + 1)")
                             .font(.marke(10, .medium))
                             .foregroundColor(Farbe.gedaempft)
                             .lineLimit(1)
@@ -883,11 +879,11 @@ struct StufenKarte: View {
             }
 
             HStack(alignment: .top, spacing: 0) {
-                zahl(k?.games_played ?? 0, L("SPIELE", "GAMES"))
+                zahl(k?.games_played ?? 0, "GAMES")
                 Spacer(minLength: 16)
-                zahl(k?.wins ?? 0, L("SIEGE", "WINS"))
+                zahl(k?.wins ?? 0, "WINS")
                 Spacer(minLength: 16)
-                zahl(k?.highscore ?? 0, L("BESTE", "BEST"))
+                zahl(k?.highscore ?? 0, "BEST")
             }
         }
         .padding(.horizontal, 15)
@@ -956,7 +952,7 @@ private struct GastHinweis: View {
         let form = RoundedRectangle(cornerRadius: 24, style: .circular)
         return VStack(alignment: .leading, spacing: 0) {
             kopfzeile
-            Text(L("Dafür brauchst du ein Konto", "That one needs an account"))
+            Text("That one needs an account")
                 .font(.marke(18, .heavy))
                 .foregroundColor(Farbe.schrift)
                 .fixedSize(horizontal: false, vertical: true)
@@ -984,7 +980,7 @@ private struct GastHinweis: View {
         HStack(spacing: 8) {
             Image(systemName: "lock")
                 .font(.system(size: 11, weight: .semibold))
-            Text(L("GASTMODUS", "GUEST MODE"))
+            Text("GUEST MODE")
                 .font(.system(size: 10, weight: .bold))
                 .tracking(1)
         }
@@ -998,7 +994,7 @@ private struct GastHinweis: View {
         let form = RoundedRectangle(cornerRadius: 16, style: .circular)
         return HStack(spacing: 8) {
             Button(action: nein) {
-                Text(L("Nein", "No"))
+                Text("No")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(DaheimFarbe.hinweis)
                     .frame(maxWidth: .infinity)
@@ -1009,7 +1005,7 @@ private struct GastHinweis: View {
             .buttonStyle(SanftDruck(skala: 0.97))
 
             Button(action: ja) {
-                Text(L("Ja", "Yes"))
+                Text("Yes")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(Color.white)
                     .frame(maxWidth: .infinity)
@@ -1024,8 +1020,7 @@ private struct GastHinweis: View {
     /// the name you are playing under right now.") - das stimmt in der App
     /// nicht, hier fuehrt "Yes" zur Anmeldung, und der Gastname bleibt nicht.
     private var nachricht: String {
-        L("Gäste können alles spielen – jeden Modus, jede Lobby und die Rangliste.\n\nXP, Spots, Gegenstände und Freunde gehören zu einem Konto, deshalb liegen sie hinter einer Anmeldung.",
-          "Guests can play everything — every mode, every lobby, and the leaderboard.\n\nXP, Spots, items and friends belong to an account, so they sit behind a sign-up.")
+        "Guests can play everything — every mode, every lobby, and the leaderboard.\n\nXP, Spots, items and friends belong to an account, so they sit behind a sign-up."
     }
 }
 
@@ -1058,14 +1053,14 @@ private struct BeitretenDialog: View {
     private var karte: some View {
         let form = RoundedRectangle(cornerRadius: 24, style: .circular)
         return VStack(alignment: .leading, spacing: 20) {
-            Text(L("Spiel beitreten", "Join game"))
+            Text("Join game")
                 .font(.marke(20, .bold))
                 .foregroundColor(Farbe.schrift)
                 .frame(height: 30)
             kaestchen
             ziffernblock
             Button(action: schliessen) {
-                Text(L("Abbrechen", "Cancel"))
+                Text("Cancel")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(Farbe.gedaempft)
                     .frame(maxWidth: .infinity)
@@ -1124,7 +1119,7 @@ private struct BeitretenDialog: View {
         let bereit: Bool = pin.count == 4
         let grund: Color = bereit ? Farbe.akzent : Farbe.akzentTief.opacity(0.2)
         return Taste(grund: grund, aktion: { if bereit { beitreten() } }) {
-            Text(L("Beitreten", "Join"))
+            Text("Join")
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(bereit ? Color.white : Farbe.gedaempft)
         }

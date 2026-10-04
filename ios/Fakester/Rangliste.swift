@@ -26,7 +26,7 @@ struct RanglistenAnsicht: View {
                     } else if laedt && eintraege.isEmpty {
                         ProgressView().tint(Farbe.akzent).padding(.top, 40)
                     } else if eintraege.isEmpty {
-                        Text(L("Noch niemand auf der Liste.", "Nobody on the board yet."))
+                        Text("Nobody on the board yet.")
                             .font(.marke(13))
                             .foregroundColor(Farbe.leise)
                             .padding(.top, 40)
@@ -60,7 +60,7 @@ struct RanglistenAnsicht: View {
                     .background(Circle().fill(Farbe.flaeche))
                     .overlay(Circle().strokeBorder(Farbe.kante, lineWidth: 1))
             }
-            Text(L("Rangliste", "Leaderboard"))
+            Text("Leaderboard")
                 .font(.marke(24, .heavy))
                 .foregroundColor(Farbe.schrift)
             Spacer(minLength: 0)

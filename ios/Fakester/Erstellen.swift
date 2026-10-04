@@ -51,7 +51,7 @@ struct ErstellenAnsicht: View {
                     .background(Circle().fill(Farbe.flaeche))
                     .overlay(Circle().strokeBorder(Farbe.kante, lineWidth: 1))
             }
-            Text(L("Spiel erstellen", "Create Game"))
+            Text("Create Game")
                 .font(.marke(24, .heavy))
                 .foregroundColor(Farbe.schrift)
             Spacer(minLength: 0)
@@ -67,17 +67,16 @@ struct ErstellenAnsicht: View {
         Karte(polster: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 Schritt(nummer: 1, titel: "Playlist", pflicht: true)
-                Text(L("Füge eine Spotify- oder YouTube-Playlist ein.",
-                       "Add a Spotify or YouTube playlist."))
+                Text("Add a Spotify or YouTube playlist.")
                     .font(.marke(12))
                     .foregroundColor(Farbe.leise)
 
                 HStack(spacing: 8) {
-                    Feld(text: $link, platzhalter: L("Spotify- oder YouTube-Link…", "Paste a Spotify or YouTube link…"))
+                    Feld(text: $link, platzhalter: "Paste a Spotify or YouTube link…")
                     Button {
                         Task { await linkPruefen() }
                     } label: {
-                        Text(sucht ? "…" : L("Hinzu", "Add"))
+                        Text(sucht ? "…" : "Add")
                             .font(.marke(13, .heavy))
                             .foregroundColor(Farbe.aufAkzent)
                             .padding(.horizontal, 14)
@@ -101,7 +100,7 @@ struct ErstellenAnsicht: View {
 
                 let andere: [PlaylistEintrag] = empfohlen.filter { $0.id != vorgabe.playlist?.id }
                 if !andere.isEmpty {
-                    Text(L("EMPFOHLEN", "FEATURED")).etikett()
+                    Text("FEATURED").etikett()
                     ForEach(andere) { e in
                         PlaylistZeile(eintrag: e, gewaehlt: false) {
                             Spuerbar.tipp()
@@ -118,7 +117,7 @@ struct ErstellenAnsicht: View {
     private var modusKarte: some View {
         Karte(polster: 16) {
             VStack(alignment: .leading, spacing: 12) {
-                Schritt(nummer: 2, titel: L("Modus", "Mode"), pflicht: false)
+                Schritt(nummer: 2, titel: "Mode", pflicht: false)
                 HStack(spacing: 12) {
                     Image(systemName: "questionmark.circle.fill")
                         .font(.system(size: 20, weight: .bold))
@@ -127,7 +126,7 @@ struct ErstellenAnsicht: View {
                         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Farbe.akzent.opacity(0.18)))
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Quiz").font(.marke(14, .heavy)).foregroundColor(Farbe.schrift)
-                        Text(L("Titel, Interpret, Jahr raten", "Guess title, artist, year"))
+                        Text("Guess title, artist, year")
                             .font(.marke(11)).foregroundColor(Farbe.leise)
                     }
                     Spacer(minLength: 0)
@@ -135,8 +134,7 @@ struct ErstellenAnsicht: View {
                 .padding(12)
                 .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Farbe.akzent.opacity(0.10)))
                 .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Farbe.akzent.opacity(0.5), lineWidth: 1))
-                Text(L("Timeline und Higher/Lower gibt's bisher nur im Browser.",
-                       "Timeline and Higher/Lower are browser-only for now."))
+                Text("Timeline and Higher/Lower are browser-only for now.")
                     .font(.marke(11))
                     .foregroundColor(Farbe.leise)
             }
@@ -149,9 +147,9 @@ struct ErstellenAnsicht: View {
         Karte(polster: 16) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Schritt(nummer: 3, titel: L("Einstellungen", "Settings"), pflicht: false)
+                    Schritt(nummer: 3, titel: "Settings", pflicht: false)
                     Spacer(minLength: 0)
-                    Button(L("Zurücksetzen", "Reset")) {
+                    Button("Reset") {
                         Spuerbar.tipp()
                         let p: PlaylistEintrag? = vorgabe.playlist
                         vorgabe = SpielVorgabe()
@@ -160,22 +158,22 @@ struct ErstellenAnsicht: View {
                     .font(.marke(11, .heavy))
                     .foregroundColor(Farbe.leise)
                 }
-                ZahlWahl(titel: L("SONGS", "SONGS"), werte: SpielVorgabe.songWahl, einheit: "", wahl: $vorgabe.songs)
-                ZahlWahl(titel: L("RATEZEIT", "GUESS TIME"), werte: SpielVorgabe.zeitWahl, einheit: "s", wahl: $vorgabe.rateZeit)
+                ZahlWahl(titel: "SONGS", werte: SpielVorgabe.songWahl, einheit: "", wahl: $vorgabe.songs)
+                ZahlWahl(titel: "GUESS TIME", werte: SpielVorgabe.zeitWahl, einheit: "s", wahl: $vorgabe.rateZeit)
                 rateArten
                 antwortArt
-                ZahlWahl(titel: L("PAUSE ZWISCHEN RUNDEN", "BREAK BETWEEN ROUNDS"), werte: SpielVorgabe.pausenWahl, einheit: "s", wahl: $vorgabe.pause)
-                Schalter(titel: L("Albumcover", "Album cover"),
-                         hinweis: L("Cover beim Raten zeigen", "show the artwork while guessing"),
+                ZahlWahl(titel: "BREAK BETWEEN ROUNDS", werte: SpielVorgabe.pausenWahl, einheit: "s", wahl: $vorgabe.pause)
+                Schalter(titel: "Album cover",
+                         hinweis: "show the artwork while guessing",
                          an: $vorgabe.cover)
-                Schalter(titel: L("Tempobonus", "Speed bonus"),
-                         hinweis: L("Extrapunkte für schnelle, ganz richtige Antworten", "extra points for answering fast — only if everything was right"),
+                Schalter(titel: "Speed bonus",
+                         hinweis: "extra points for answering fast — only if everything was right",
                          an: $vorgabe.tempoBonus)
-                Schalter(titel: L("Serienbonus", "Streak bonus"),
-                         hinweis: L("Extrapunkte für mehrere ganz richtige Antworten am Stück", "extra points for several fully correct answers in a row"),
+                Schalter(titel: "Streak bonus",
+                         hinweis: "extra points for several fully correct answers in a row",
                          an: $vorgabe.serienBonus)
                 Schalter(titel: "Sneaky Mode",
-                         hinweis: L("Richtig/falsch erst ganz am Ende", "no right/wrong until the very end"),
+                         hinweis: "no right/wrong until the very end",
                          an: $vorgabe.sneaky)
             }
         }
@@ -183,21 +181,21 @@ struct ErstellenAnsicht: View {
 
     private var rateArten: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(L("WAS RATEN?", "WHAT TO GUESS?")).etikett()
+            Text("WHAT TO GUESS?").etikett()
             HStack(spacing: 8) {
-                Umschalter(text: L("Titel", "Title"), an: $vorgabe.titel)
-                Umschalter(text: L("Interpret", "Artist"), an: $vorgabe.interpret)
-                Umschalter(text: L("Jahr", "Year"), an: $vorgabe.jahr)
+                Umschalter(text: "Title", an: $vorgabe.titel)
+                Umschalter(text: "Artist", an: $vorgabe.interpret)
+                Umschalter(text: "Year", an: $vorgabe.jahr)
             }
         }
     }
 
     private var antwortArt: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(L("ANTWORTART", "ANSWER TYPE")).etikett()
+            Text("ANSWER TYPE").etikett()
             HStack(spacing: 8) {
-                Wahlpille(text: L("Auswahl", "Multiple choice"), an: !vorgabe.freitext) { vorgabe.freitext = false }
-                Wahlpille(text: L("Freitext", "Free text"), an: vorgabe.freitext) { vorgabe.freitext = true }
+                Wahlpille(text: "Multiple choice", an: !vorgabe.freitext) { vorgabe.freitext = false }
+                Wahlpille(text: "Free text", an: vorgabe.freitext) { vorgabe.freitext = true }
             }
         }
     }
@@ -207,8 +205,7 @@ struct ErstellenAnsicht: View {
     private var fuss: some View {
         VStack(spacing: 8) {
             if vorgabe.playlist == nil {
-                Text(L("Füge eine Playlist hinzu, um eine Lobby zu erstellen",
-                       "Add a playlist to create a lobby"))
+                Text("Add a playlist to create a lobby")
                     .font(.marke(12, .semibold))
                     .foregroundColor(Farbe.leise)
             }
@@ -216,7 +213,7 @@ struct ErstellenAnsicht: View {
                 Button {
                     los(oeffentlich: false)
                 } label: {
-                    Label(L("Privat", "Private"), systemImage: "lock.fill")
+                    Label("Private", systemImage: "lock.fill")
                 }
                 .buttonStyle(Hauptknopf(aus: vorgabe.playlist == nil))
                 .disabled(vorgabe.playlist == nil)
@@ -224,7 +221,7 @@ struct ErstellenAnsicht: View {
                 Button {
                     los(oeffentlich: true)
                 } label: {
-                    Label(L("Öffentlich", "Public"), systemImage: "globe")
+                    Label("Public", systemImage: "globe")
                 }
                 .buttonStyle(Hauptknopf(farbe: Farbe.kante, aus: vorgabe.playlist == nil))
                 .disabled(vorgabe.playlist == nil)
@@ -294,7 +291,7 @@ private struct Schritt: View {
                 .foregroundColor(Farbe.schrift)
             Spacer(minLength: 0)
             if pflicht {
-                Text(L("PFLICHT", "REQUIRED"))
+                Text("REQUIRED")
                     .font(.marke(9, .black))
                     .foregroundColor(Farbe.schlecht)
                     .padding(.horizontal, 6)

@@ -297,7 +297,7 @@ final class Spiel: NSObject, ObservableObject {
             }
 
         case "game-starting":
-            ladetext = lies(Startmeldung.self)?.message ?? L("Songs werden geladen…", "Loading songs…")
+            ladetext = lies(Startmeldung.self)?.message ?? "Loading songs…"
             ladestand = nil
             lage = .laedt
 
@@ -306,7 +306,7 @@ final class Spiel: NSObject, ObservableObject {
             lage = .laedt
 
         case "game-start-failed":
-            meldung = lies(Hinweis.self)?.message ?? L("Das Spiel konnte nicht starten.", "The game couldn't start.")
+            meldung = lies(Hinweis.self)?.message ?? "The game couldn't start."
             lage = .lobby
 
         case "countdown":
@@ -373,7 +373,7 @@ final class Spiel: NSObject, ObservableObject {
             lage = .getrennt
 
         case "lobby-closed":
-            meldung = L("Die Lobby gibt es nicht mehr.", "This lobby no longer exists.")
+            meldung = "This lobby no longer exists."
             willVerbunden = false
             abbauen()
             lage = .getrennt

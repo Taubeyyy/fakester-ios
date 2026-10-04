@@ -22,8 +22,7 @@ struct QuestAnsicht: View {
             reiterLeiste
             ScrollView {
                 VStack(spacing: 10) {
-                    Text(L("Schaff Quests und verdien Spots. Neue Ziele kommen beim Spielen dazu.",
-                           "Complete quests to earn Spots. New goals unlock as you play."))
+                    Text("Complete quests to earn Spots. New goals unlock as you play.")
                         .font(.marke(13))
                         .foregroundColor(Farbe.leise)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -35,7 +34,7 @@ struct QuestAnsicht: View {
                     } else if laedt && stand == nil {
                         ProgressView().tint(Farbe.akzent).padding(.top, 40)
                     } else if liste.isEmpty {
-                        Text(L("Hier gibt's gerade nichts.", "Nothing here right now."))
+                        Text("Nothing here right now.")
                             .font(.marke(13))
                             .foregroundColor(Farbe.leise)
                             .padding(.top, 40)
@@ -213,14 +212,14 @@ private struct QuestKarte: View {
     }
 
     private var name: String {
-        if let n = QuestEintrag.namen.first(where: { $0.id == quest.id }) { return L(n.de, n.en) }
+        if let n = QuestEintrag.namen.first(where: { $0.id == quest.id }) { return n.en }
         return quest.id
     }
 
     @ViewBuilder
     private var rechts: some View {
         if quest.abgeholt {
-            Text(L("Abgeholt", "Claimed"))
+            Text("Claimed")
                 .font(.marke(10, .bold))
                 .foregroundColor(Farbe.akzent)
                 .padding(.horizontal, 10)
@@ -268,8 +267,8 @@ struct TagesBonusBlatt: View {
 
     var body: some View {
         VStack(spacing: 18) {
-            Text(L("TÄGLICHE BELOHNUNG", "DAILY REWARD")).etikett()
-            Text(L("Tag \(ergebnis?.serie ?? bonus.tag)", "Day \(ergebnis?.serie ?? bonus.tag)"))
+            Text("DAILY REWARD").etikett()
+            Text("Day \(ergebnis?.serie ?? bonus.tag)")
                 .font(.marke(34, .heavy))
                 .foregroundStyle(Farbe.verlaufHeld)
             HStack(spacing: 10) {
@@ -281,8 +280,7 @@ struct TagesBonusBlatt: View {
                     Lohn(symbol: "trophy.fill", wert: ergebnis?.gold ?? bonus.gold, einheit: "GS", farbe: Farbe.gold)
                 }
             }
-            Text(L("Verpasst du einen Tag, fängt die Serie wieder bei Tag 1 an.",
-                   "Miss a day and the streak starts over at day 1."))
+            Text("Miss a day and the streak starts over at day 1.")
                 .font(.marke(12))
                 .foregroundColor(Farbe.leise)
                 .multilineTextAlignment(.center)
@@ -293,12 +291,12 @@ struct TagesBonusBlatt: View {
                 Button {
                     Task { await abholen() }
                 } label: {
-                    Text(holt ? "…" : L("Abholen", "Collect"))
+                    Text(holt ? "…" : "Collect")
                 }
                 .buttonStyle(Hauptknopf(aus: holt))
                 .disabled(holt)
             } else {
-                Button(L("Fertig", "Done")) { schliessen() }
+                Button("Done") { schliessen() }
                     .buttonStyle(Hauptknopf(farbe: Farbe.kante))
             }
         }
@@ -319,7 +317,7 @@ struct TagesBonusBlatt: View {
                 Spuerbar.richtig()
                 await api.profilAuffrischen()
             } else {
-                fehler = L("Heute schon abgeholt.", "Already collected today.")
+                fehler = "Already collected today."
             }
         } catch {
             fehler = error.localizedDescription

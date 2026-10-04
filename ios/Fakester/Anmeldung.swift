@@ -108,9 +108,9 @@ struct AnmeldeAnsicht: View {
     }
 
     private var unterzeile: some View {
-        let vorne: Text = Text(L("Rate den Song. ", "Guess the song. "))
+        let vorne: Text = Text("Guess the song. ")
             .foregroundColor(Farbe.leise)
-        let hinten: Text = Text(L("Schlag die Crew.", "Beat the crew."))
+        let hinten: Text = Text("Beat the crew.")
             .font(.marke(17, .semibold))
             .foregroundColor(Farbe.schrift)
         return (vorne + hinten)
@@ -129,7 +129,7 @@ struct AnmeldeAnsicht: View {
                 playKnopf
                     .transition(.opacity)
             }
-            Trenner(text: L("oder", "or"))
+            Trenner(text: "or")
                 .padding(.vertical, 16)
             kontoKopf
                 .padding(.bottom, 20)
@@ -164,7 +164,7 @@ struct AnmeldeAnsicht: View {
             HStack(spacing: 8) {
                 Image(systemName: "play")
                     .font(.system(size: 12, weight: .medium))
-                Text(L("Jetzt spielen", "Play now"))
+                Text("Play now")
             }
         }
         .buttonStyle(LilaKnopf(schrift: 14, hoehe: 49))
@@ -181,7 +181,7 @@ struct AnmeldeAnsicht: View {
                         .foregroundColor(Farbe.gedaempft)
                         .frame(width: 14, height: 14)
                     TextField("", text: $gastname,
-                              prompt: Text(L("Wähl einen Namen…", "Pick a name…")).foregroundColor(Farbe.leise))
+                              prompt: Text("Pick a name…").foregroundColor(Farbe.leise))
                         .font(.marke(14))
                         .foregroundColor(Farbe.schrift)
                         .autocorrectionDisabled()
@@ -217,7 +217,7 @@ struct AnmeldeAnsicht: View {
                     fehler = nil
                 }
             } label: {
-                Text(L("Zurück zur Anmeldung", "Back to logging in"))
+                Text("Back to logging in")
                     .font(.marke(11, .medium))
                     .foregroundColor(Farbe.gedaempft)
                     .frame(height: 17)
@@ -236,13 +236,13 @@ struct AnmeldeAnsicht: View {
                 .frame(width: 36, height: 36)
                 .background(Circle().fill(Color.white.opacity(0.06)))
             VStack(alignment: .leading, spacing: 0) {
-                Text(neuesKonto ? L("Konto anlegen", "Create account") : L("Anmelden", "Sign in"))
+                Text(neuesKonto ? "Create account" : "Sign in")
                     .font(.marke(17, .heavy))
                     .foregroundColor(Farbe.schrift)
                     .lineLimit(1)
                     .frame(height: 21)
-                Text(neuesKonto ? L("behält deine XP, Spots und Gegenstände", "keeps your XP, Spots and items")
-                                : L("mit deinem fakester.app-Konto", "with your fakester.app account"))
+                Text(neuesKonto ? "keeps your XP, Spots and items"
+                                : "with your fakester.app account")
                     .font(.marke(11))
                     .foregroundColor(Farbe.gedaempft)
                     .lineLimit(1)
@@ -253,8 +253,8 @@ struct AnmeldeAnsicht: View {
 
     private var umschalter: some View {
         HStack(spacing: 4) {
-            reiter(L("Anmelden", "Sign in"), an: !neuesKonto) { modus(false) }
-            reiter(L("Konto anlegen", "Create account"), an: neuesKonto) { modus(true) }
+            reiter("Sign in", an: !neuesKonto) { modus(false) }
+            reiter("Create account", an: neuesKonto) { modus(true) }
         }
         .padding(4)
         .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white.opacity(0.04)))
@@ -277,18 +277,18 @@ struct AnmeldeAnsicht: View {
 
     private var felder: some View {
         VStack(alignment: .leading, spacing: 12) {
-            KontoFeld(titel: L("Benutzername", "Username"),
+            KontoFeld(titel: "Username",
                       symbol: "person",
-                      platzhalter: L("Dein Benutzername", "Your username"),
+                      platzhalter: "Your username",
                       text: $name,
                       art: .name,
                       fokus: $fokus,
                       inhalt: UITextContentType.username,
                       abschicken: { los() })
-            KontoFeld(titel: L("Passwort", "Password"),
+            KontoFeld(titel: "Password",
                       symbol: "lock",
-                      platzhalter: neuesKonto ? L("Mindestens 8 Zeichen", "At least 8 characters")
-                                              : L("Dein Passwort", "Your password"),
+                      platzhalter: neuesKonto ? "At least 8 characters"
+                                              : "Your password",
                       text: $passwort,
                       art: .passwort,
                       fokus: $fokus,
@@ -298,9 +298,9 @@ struct AnmeldeAnsicht: View {
                       augeTipp: { zeigen.toggle(); anfassen() },
                       abschicken: { los() })
             if neuesKonto {
-                KontoFeld(titel: L("Passwort wiederholen", "Repeat password"),
+                KontoFeld(titel: "Repeat password",
                           symbol: "lock",
-                          platzhalter: L("Noch einmal", "Once more"),
+                          platzhalter: "Once more",
                           text: $wiederholung,
                           art: .wiederholung,
                           fokus: $fokus,
@@ -346,19 +346,19 @@ struct AnmeldeAnsicht: View {
         if laeuft {
             HStack(spacing: 8) {
                 Drehkreis()
-                Text(L("Prüfe…", "Checking…"))
+                Text("Checking…")
             }
         } else if neuesKonto {
             HStack(spacing: 8) {
                 Image(systemName: "person.badge.plus")
                     .font(.system(size: 13, weight: .medium))
-                Text(L("Konto anlegen", "Create account"))
+                Text("Create account")
             }
         } else {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.right.to.line")
                     .font(.system(size: 13, weight: .medium))
-                Text(L("Einloggen", "Log in"))
+                Text("Log in")
             }
         }
     }
@@ -389,12 +389,10 @@ struct AnmeldeAnsicht: View {
 
     private var hinweisText: Text {
         if gastModus {
-            return Text(L("Du kannst alles als Gast spielen. XP, Spots und Gegenstände brauchen ein Konto – und das kannst du jederzeit anlegen, ohne deinen Namen zu verlieren.",
-                          "You can play everything as a guest. XP, Spots and items need an account — and you can make one any time without losing your name."))
+            return Text("You can play everything as a guest. XP, Spots and items need an account — and you can make one any time without losing your name.")
         }
         if neuesKonto {
-            return Text(L("Unter deinem Namen sehen dich die anderen. Nimm einen, den du behalten willst – ändern kostet später Spots.",
-                          "Your name is how other players see you. Pick something you want to keep — changing it later costs Spots."))
+            return Text("Your name is how other players see you. Pick something you want to keep — changing it later costs Spots.")
         }
         return Text(kontoHinweis)
     }
@@ -402,15 +400,13 @@ struct AnmeldeAnsicht: View {
     /// "… or create one to keep …" - "create one" ist im Browser ein Knopf in
     /// 16 pt, fett und lila, mitten im 11-pt-Text.
     private var kontoHinweis: AttributedString {
-        var ganz = AttributedString(L("Noch kein Konto? Du kannst sofort als Gast spielen, oder ",
-                                      "No account yet? You can play as a guest right away, or "))
-        var verweis = AttributedString(L("leg eins an", "create one"))
+        var ganz = AttributedString("No account yet? You can play as a guest right away, or ")
+        var verweis = AttributedString("create one")
         verweis[AttributeScopes.SwiftUIAttributes.FontAttribute.self] = Font.marke(16, .semibold)
         verweis[AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute.self] = Farbe.akzent
         verweis[AttributeScopes.FoundationAttributes.LinkAttribute.self] = URL(string: AnmeldeAnsicht.verweisSchema + "://konto")
         ganz.append(verweis)
-        ganz.append(AttributedString(L(" und behalte deine XP, Spots und Gegenstände.",
-                                       " to keep your XP, Spots and items.")))
+        ganz.append(AttributedString(" to keep your XP, Spots and items."))
         return ganz
     }
 
@@ -458,7 +454,7 @@ struct AnmeldeAnsicht: View {
     private func gastLos() {
         let sauber: String = AnmeldeAnsicht.sauberName(gastname)
         guard sauber.count >= 2 else {
-            zeigeFehler(L("Mindestens 2 Zeichen", "At least 2 characters"))
+            zeigeFehler("At least 2 characters")
             Spuerbar.falsch()
             return
         }
@@ -482,7 +478,7 @@ struct AnmeldeAnsicht: View {
         anfassen()
         let n: String = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !n.isEmpty, !passwort.isEmpty else {
-            zeigeFehler(L("Gib Benutzername und Passwort ein", "Enter your username and password"))
+            zeigeFehler("Enter your username and password")
             Spuerbar.falsch()
             return
         }
@@ -490,13 +486,13 @@ struct AnmeldeAnsicht: View {
         if registrieren {
             var problem: String?
             if n.count < 3 || n.count > 20 {
-                problem = L("Benutzername: 3–20 Zeichen", "Username: 3-20 characters")
+                problem = "Username: 3-20 characters"
             } else if n.range(of: "^[a-zA-Z0-9_]+$", options: .regularExpression) == nil {
-                problem = L("Nur Buchstaben, Ziffern und _", "Letters, numbers and _ only")
+                problem = "Letters, numbers and _ only"
             } else if passwort.count < 8 {
-                problem = L("Passwort: mindestens 8 Zeichen", "Password: at least 8 characters")
+                problem = "Password: at least 8 characters"
             } else if passwort != wiederholung {
-                problem = L("Die beiden Passwörter stimmen nicht überein", "The two passwords do not match")
+                problem = "The two passwords do not match"
             }
             if let p = problem {
                 zeigeFehler(p)
@@ -517,8 +513,8 @@ struct AnmeldeAnsicht: View {
                 Spuerbar.richtig()
             } catch {
                 let meldung: String = error.localizedDescription
-                let ersatz: String = registrieren ? L("Konto konnte nicht angelegt werden", "Could not create the account")
-                                                  : L("Anmeldung fehlgeschlagen", "Login failed")
+                let ersatz: String = registrieren ? "Could not create the account"
+                                                  : "Login failed"
                 zeigeFehler(meldung.isEmpty ? ersatz : meldung)
                 Spuerbar.falsch()
             }
@@ -673,8 +669,8 @@ private struct KontoFeld: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, -7.5)
-                    .accessibilityLabel(offen ? L("Passwort verbergen", "Hide password")
-                                              : L("Passwort zeigen", "Show password"))
+                    .accessibilityLabel(offen ? "Hide password"
+                                              : "Show password")
                 }
             }
             .modifier(WebFeldRahmen(aktiv: aktiv))
@@ -782,10 +778,9 @@ private struct AlphaKarte: View {
     var body: some View {
         let form = RoundedRectangle(cornerRadius: 16, style: .continuous)
         VStack(alignment: .leading, spacing: 0) {
-            AlphaPille(text: L("Öffentliche Alpha", "Public alpha"))
+            AlphaPille(text: "Public alpha")
                 .padding(.bottom, 6)
-            Text(L("Songs fehlen, Runden brechen ab, Dinge wandern herum. So ist eine Alpha eben. Wenn sich etwas falsch anfühlt, sag es uns – so wird es repariert.",
-                   "Songs go missing, rounds break, things move around. That is what an alpha is. If something feels wrong, tell us — that is how it gets fixed."))
+            Text("Songs go missing, rounds break, things move around. That is what an alpha is. If something feels wrong, tell us — that is how it gets fixed.")
                 .font(.marke(12))
                 .foregroundColor(AnmeldeFarbe.hellLila)
                 .lineSpacing(2.7)
@@ -809,7 +804,7 @@ private struct AlphaKarte: View {
             HStack(spacing: 8) {
                 Image(systemName: "message")
                     .font(.system(size: 12, weight: .medium))
-                Text(L("Zum Discord", "Join the Discord"))
+                Text("Join the Discord")
                     .font(.marke(13, .bold))
             }
             .foregroundColor(AnmeldeFarbe.discordText)
@@ -843,7 +838,7 @@ private struct OnlineKapsel: View {
                 (Text(verbatim: live.lobbies.formatted())
                     .font(.marke(12, .semibold))
                     .foregroundColor(Farbe.schrift)
-                 + Text(L(" Lobbys", " lobbies")))
+                 + Text(" lobbies"))
             }
         }
         .font(.marke(12, .medium))
