@@ -27,8 +27,17 @@ struct SprachKnopf: View {
     @AppStorage(Sprache.schluessel) private var sprache: String = ""
 
     var body: some View {
-        Button(Sprache.aktuell == .en ? "🇩🇪 Deutsch" : "🇬🇧 English") {
+        Button {
             sprache = (Sprache.aktuell == .en ? Sprache.de : Sprache.en).rawValue
+        } label: {
+            Text(Sprache.aktuell == .en ? "🇩🇪 Deutsch" : "🇬🇧 English")
+                .font(.marke(12, .bold))
+                .foregroundColor(Farbe.gedaempft)
+                .lineLimit(1)
+                .padding(.horizontal, 12)
+                .frame(height: 38)
+                .background(Glas(radius: 999))
         }
+        .buttonStyle(BubbleDruck())
     }
 }

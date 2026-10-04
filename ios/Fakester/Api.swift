@@ -55,6 +55,9 @@ final class Api: ObservableObject {
         var xp: Int?
         var spots: Int?
         var gold_spots: Int?
+        var games_played: Int?
+        var wins: Int?
+        var highscore: Int?
         var is_pro: Bool = false
         var is_admin: Bool = false
         var equipped_icon_id: Int?
@@ -64,6 +67,7 @@ final class Api: ObservableObject {
 
         private enum CodingKeys: String, CodingKey {
             case id, username, xp, spots, gold_spots, is_pro, is_admin
+            case games_played, wins, highscore
             case equipped_icon_id, equipped_title_id, avatar_url, equipped_emoji
         }
         init(from d: Decoder) throws {
@@ -73,6 +77,9 @@ final class Api: ObservableObject {
             xp = try? c.decode(Int.self, forKey: .xp)
             spots = try? c.decode(Int.self, forKey: .spots)
             gold_spots = try? c.decode(Int.self, forKey: .gold_spots)
+            games_played = try? c.decode(Int.self, forKey: .games_played)
+            wins = try? c.decode(Int.self, forKey: .wins)
+            highscore = try? c.decode(Int.self, forKey: .highscore)
             is_pro = (try? c.decode(Bool.self, forKey: .is_pro)) ?? false
             is_admin = (try? c.decode(Bool.self, forKey: .is_admin)) ?? false
             equipped_icon_id = try? c.decode(Int.self, forKey: .equipped_icon_id)
@@ -84,6 +91,30 @@ final class Api: ObservableObject {
 
     /// Die Form, in der der Server eine Absage begruendet.
     private struct Absage: Decodable { let error: String? }
+
+    /// Stufe und Fortschritt, genau wie der Server rechnet:
+    /// `levelForXp(xp) = max(1, floor((25 + sqrt(625 + 100*xp)) / 50))`.
+    /// Nachgebaut statt geschaetzt - eine Stufe, die in der App anders steht
+    /// als im Browser, ist schlimmer als gar keine.
+    enum Stufe {
+        static func fuerXp(_ xp: Int) -> Int {
+            max(1, Int((25.0 + (625.0 + 100.0 * Double(max(0, xp))).squareRoot()) / 50.0))
+        }
+
+        /// Ab wie viel XP diese Stufe beginnt - die Umkehrung der Formel oben.
+        static func xpAb(_ stufe: Int) -> Int {
+            let g = 50.0 * Double(stufe) - 25.0
+            return max(0, Int((g * g - 625.0) / 100.0))
+        }
+
+        /// Anteil 0…1 innerhalb der laufenden Stufe.
+        static func anteil(xp: Int) -> Double {
+            let l = fuerXp(xp)
+            let von = xpAb(l), bis = xpAb(l + 1)
+            guard bis > von else { return 0 }
+            return min(1, max(0, Double(xp - von) / Double(bis - von)))
+        }
+    }
 
     enum Fehler: LocalizedError {
         case meldung(String)

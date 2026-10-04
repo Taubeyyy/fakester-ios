@@ -358,6 +358,8 @@ struct LadeAnsicht: View {
 struct Balken: View {
     let anteil: Double
     var farbe: Color? = nil
+    /// Der Rundenstrich oben ist duenner als der Balken in einer Karte.
+    var hoehe: CGFloat = 6
 
     var body: some View {
         GeometryReader { raum in
@@ -369,7 +371,7 @@ struct Balken: View {
                     .shadow(color: (farbe ?? Farbe.akzent).opacity(0.4), radius: 5)
             }
         }
-        .frame(height: 6)
+        .frame(height: hoehe)
     }
 }
 

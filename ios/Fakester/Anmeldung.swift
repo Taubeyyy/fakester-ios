@@ -179,144 +179,6 @@ struct Feld: View {
     }
 }
 
-/// Startbildschirm, sobald klar ist, wer spielt - wie .home im Browser:
-/// Profil oben, grosses Logo, zwei Spielknoepfe, darunter die Bubbles.
-struct DaheimAnsicht: View {
-    @EnvironmentObject private var api: Api
-    @EnvironmentObject private var spiel: Spiel
-
-    @State private var pin = ""
-    @State private var beitreten = false
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                kopf
-                    .padding(.bottom, 12)
-
-                AktualisierungsKarte()
-
-                VStack(spacing: 36) {
-                    Schriftzug(groesse: 56)
-                        .padding(.top, 24)
-                    spielknoepfe
-                    bubbles
-                }
-                .padding(.vertical, 20)
-
-                fuss
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 40)
-        }
-        .scrollDismissesKeyboard(.interactively)
-    }
-
-    // MARK: Kopf (.home-header)
-
-    private var kopf: some View {
-        HStack(spacing: 10) {
-            ProfilChip()
-            Spacer(minLength: 0)
-            if let s = api.ich?.spots {
-                HStack(spacing: 5) {
-                    Image(systemName: "circle.hexagongrid.fill")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Farbe.gold)
-                    Text("\(s)")
-                        .font(.mono(13))
-                        .foregroundColor(Farbe.schrift)
-                }
-                .padding(.horizontal, 12)
-                .frame(height: 34)
-                .background(Glas(radius: 999))
-            }
-        }
-    }
-
-    // MARK: Spielknoepfe (.home-play-btns)
-
-    private var spielknoepfe: some View {
-        VStack(spacing: 10) {
-            Button {
-                Spuerbar.tipp()
-                spiel.meldung = L("Spiel erstellen gibt's bisher nur im Browser.", "Creating a game is browser-only for now.")
-            } label: {
-                Label(L("Spiel erstellen", "Create game"), systemImage: "plus")
-            }
-            .buttonStyle(Hauptknopf())
-
-            Button {
-                Spuerbar.tipp()
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.8)) { beitreten.toggle() }
-            } label: {
-                Label(L("Spiel beitreten", "Join game"), systemImage: "arrow.right.circle")
-            }
-            .buttonStyle(Nebenknopf())
-
-            if beitreten {
-                pinKarte
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-        .padding(.horizontal, 6)
-    }
-
-    private var pinKarte: some View {
-        Karte {
-            VStack(spacing: 12) {
-                Text(L("LOBBY-PIN", "LOBBY PIN")).etikett()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Feld(text: $pin, platzhalter: "PIN", nurZiffern: true, mono: true)
-                Button(L("Beitreten", "Join")) {
-                    guard let a = api.ausweis else { return }
-                    Spuerbar.tipp()
-                    spiel.betreten(pin: pin, als: a)
-                }
-                .buttonStyle(Hauptknopf(aus: pin.count < 4))
-                .disabled(pin.count < 4)
-            }
-        }
-    }
-
-    // MARK: Bubbles (.home-nav-bubbles)
-
-    private var bubbles: some View {
-        let spalten: [GridItem] = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
-        return LazyVGrid(columns: spalten, spacing: 10) {
-            ForEach(HeimZiel.alle) { ziel in
-                Bubble(ziel: ziel) {
-                    Spuerbar.tipp()
-                    spiel.meldung = L("\(ziel.name) gibt's bisher nur im Browser.", "\(ziel.name) is browser-only for now.")
-                }
-            }
-        }
-        .padding(.horizontal, 6)
-    }
-
-    // MARK: Fuss
-
-    private var fuss: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 24) {
-                Button("Feedback") {
-                    NotificationCenter.default.post(name: .geschuettelt, object: nil)
-                }
-                Button(api.angemeldet ? L("Abmelden", "Log out") : L("Anderer Name", "Change name")) {
-                    api.abmelden()
-                }
-                SprachKnopf()
-            }
-            .font(.marke(13, .semibold))
-            .foregroundColor(Farbe.gedaempft)
-            Text(L("Tipp: Handy schütteln schickt auch Feedback.", "Tip: shake your phone to send feedback too."))
-                .font(.marke(11))
-                .foregroundColor(Farbe.leise)
-        }
-        .padding(.top, 12)
-    }
-}
 
 /// .profile-chip: rundes Lila-Symbol, Name, darunter XP oder "Gast".
 struct ProfilChip: View {
@@ -337,6 +199,8 @@ struct ProfilChip: View {
             }
             .frame(width: 34, height: 34)
             .shadow(color: Farbe.akzent.opacity(0.36), radius: 6)
+            // Die Stufe sitzt im Browser als goldene Perle unten am Symbol.
+            .overlay(alignment: .bottomTrailing) { stufenPerle }
 
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 6) {
@@ -355,6 +219,20 @@ struct ProfilChip: View {
         .padding(.trailing, 14)
         .padding(.vertical, 6)
         .background(Glas(radius: 999))
+    }
+
+    @ViewBuilder
+    private var stufenPerle: some View {
+        if let xp = api.ich?.xp, !(api.ausweis?.isGuest ?? true) {
+            Text("\(Api.Stufe.fuerXp(xp))")
+                .font(.marke(9, .black))
+                .foregroundColor(Farbe.aufGold)
+                .frame(minWidth: 16)
+                .frame(height: 16)
+                .background(Circle().fill(Farbe.verlaufGold))
+                .overlay(Circle().strokeBorder(Farbe.grund, lineWidth: 1.5))
+                .offset(x: 3, y: 3)
+        }
     }
 
     private var unterzeile: String {
@@ -379,52 +257,6 @@ struct Marke: View {
     }
 }
 
-/// Ein Ziel auf dem Startbildschirm. Wie im Browser - die meisten fuehren in
-/// der App noch nirgends hin.
-struct HeimZiel: Identifiable {
-    let id: String
-    let name: String
-    let symbol: String
-
-    static var alle: [HeimZiel] {
-        [
-            HeimZiel(id: "shop", name: "Shop", symbol: "bag.fill"),
-            HeimZiel(id: "style", name: "Style", symbol: "paintpalette.fill"),
-            HeimZiel(id: "path", name: L("Pfad", "Path"), symbol: "map.fill"),
-            HeimZiel(id: "board", name: L("Rangliste", "Leaderboard"), symbol: "trophy.fill"),
-            HeimZiel(id: "friends", name: L("Freunde", "Friends"), symbol: "person.2.fill"),
-            HeimZiel(id: "playlists", name: "Playlists", symbol: "music.note.list"),
-            HeimZiel(id: "quests", name: "Quests", symbol: "scroll.fill"),
-            HeimZiel(id: "awards", name: L("Erfolge", "Awards"), symbol: "rosette")
-        ]
-    }
-}
-
-/// .nav-bubble: quadratisch, Glas, Symbol ueber kleinem Wort.
-struct Bubble: View {
-    let ziel: HeimZiel
-    let aktion: () -> Void
-
-    var body: some View {
-        Button(action: aktion) {
-            VStack(spacing: 6) {
-                Image(systemName: ziel.symbol)
-                    .font(.system(size: 20))
-                    .foregroundColor(Farbe.gedaempft)
-                Text(ziel.name)
-                    .font(.marke(11, .bold))
-                    .foregroundColor(Farbe.gedaempft)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            .padding(.horizontal, 4)
-            .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fit)
-            .background(Glas(radius: 16))
-        }
-        .buttonStyle(BubbleDruck())
-    }
-}
 
 struct BubbleDruck: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

@@ -6,28 +6,40 @@ import CoreText
 /// nicht aussieht wie ein fremdes Programm, das zufaellig dieselben Daten zeigt.
 /// Die Namen in Klammern sind die CSS-Variablen im Browser.
 enum Farbe {
-    static let grund      = Color(hex: 0x07070C)                 // --bg
-    static let grund3     = Color(hex: 0x15151F)                 // --bg3 (Eingabefelder)
-    static let grund4     = Color(hex: 0x1E1E2B)                 // --bg4 (Feld mit Fokus)
-    static let flaeche    = Color(hex: 0x1A1A26).opacity(0.72)   // --bg-elev (Karten, Glas)
-    static let linie      = Color.white.opacity(0.06)            // --line
-    static let kante      = Color.white.opacity(0.12)            // --line2
-    static let akzent     = Color(hex: 0xB15CFF)                 // --green-hi (heisst im CSS noch "green")
-    static let akzentTief = Color(hex: 0x8B3FD6)                 // --green
+    // Abgelesen am laufenden fakester.app (Oktober 2026), nicht aus dem alten
+    // style.css: der Browser-Client ist seit dem Umstieg eine React-App mit
+    // eigenen Variablen. Die Namen in Klammern sind die dortigen.
+    static let grund      = Color(hex: 0x07070C)                 // --background
+    static let grund3     = Color(hex: 0x15142A)                 // --muted (Eingabefelder)
+    static let grund4     = Color(hex: 0x1A1831)                 // --secondary (Feld mit Fokus)
+    static let flaeche    = Color(hex: 0x0F0E1C)                 // --card
+    static let linie      = Color.white.opacity(0.07)            // --border
+    static let kante      = Color.white.opacity(0.12)
+    /// --acc: haengt am ausgeruesteten Gegenstand, Vorgabe ist dieses Lila.
+    static let akzent     = Color(hex: 0xB15CFF)
+    static let akzentTief = Color(hex: 0x8B3FD6)
     static let akzentHell = Color(hex: 0xC77DFF)
-    static let schrift    = Color(hex: 0xF4F4F7)                 // --t1
-    static let gedaempft  = Color(hex: 0xA8A8B8)                 // --t2
-    static let leise      = Color(hex: 0x65657A)                 // --t3
-    static let gut        = Color(hex: 0x1ED760)                 // --ok
-    static let schlecht   = Color(hex: 0xFF4D5E)                 // --red
-    static let gold       = Color(hex: 0xF5A623)                 // --gold
-    /// Schrift auf dem lila Knopf - im Browser genau so (#00220f).
-    static let aufAkzent  = Color(hex: 0x00220F)
+    static let schrift    = Color(hex: 0xEEEEFF)                 // --foreground
+    static let gedaempft  = Color(hex: 0x9F9DC4)
+    static let leise      = Color(hex: 0x7877A0)                 // --muted-foreground
+    static let gut        = Color(hex: 0x34D399)                 // --accent
+    static let schlecht   = Color(hex: 0xF87171)                 // --destructive
+    static let gold       = Color(hex: 0xFBBF24)
+    /// Schrift auf dem lila Knopf.
+    static let aufAkzent  = Color(hex: 0x0B0414)
 
-    /// --grad-primary: der grosse Knopf
-    static let verlauf = LinearGradient(colors: [Color(hex: 0x7B2FBE), Color(hex: 0xB15CFF)],
+    /// Die vier Farben der Kacheln auf dem Startbildschirm - im Browser traegt
+    /// jede ihren eigenen Ton, das ist dort der halbe Wiedererkennungswert.
+    static let kachelLila  = Color(hex: 0xB15CFF)
+    static let kachelGold  = Color(hex: 0xFBBF24)
+    static let kachelGruen = Color(hex: 0x34D399)
+    static let kachelRosa  = Color(hex: 0xF472B6)
+    static let discord     = Color(hex: 0x5865F2)
+
+    /// Der grosse Knopf
+    static let verlauf = LinearGradient(colors: [Color(hex: 0x9B45F0), Color(hex: 0xC06BFF)],
                                         startPoint: .topLeading, endPoint: .bottomTrailing)
-    /// --grad-hero: "STER" im Schriftzug
+    /// "STER" im Schriftzug
     static let verlaufHeld = LinearGradient(colors: [Color(hex: 0x7B2FBE), Color(hex: 0xC77DFF), Color(hex: 0x7B2FBE)],
                                             startPoint: .leading, endPoint: .trailing)
 }
