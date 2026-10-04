@@ -96,12 +96,17 @@ final class SmokeTests: XCTestCase {
             shot("08 reveal \(round)")
         }
 
-        // 6. Game over
-        let mainMenu = app.buttons["Main menu"]
-        waitFor(mainMenu, 60, "game over (Main menu)")
+        // 6. Game over, then "Back to lobby" must really return to the lobby
+        let backToLobby = app.buttons["Back to lobby"]
+        waitFor(backToLobby, 60, "game over (Back to lobby)")
         sleep(2)
         shot("09 game over")
-        mainMenu.tap()
+        if !backToLobby.isHittable { app.swipeUp() }
+        backToLobby.tap()
+        waitFor(start, 20, "lobby again after Back to lobby")
+        sleep(1)
+        shot("10 back in the lobby")
+        app.buttons["Back"].firstMatch.tap()
 
         // 7. Leaderboard (public, works for guests)
         waitFor(createGame, 20, "home after the game")
@@ -110,6 +115,6 @@ final class SmokeTests: XCTestCase {
         board.tap()
         waitFor(element(containing: "XP"), 20, "leaderboard rows")
         sleep(1)
-        shot("10 leaderboard")
+        shot("11 leaderboard")
     }
 }

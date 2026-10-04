@@ -72,6 +72,9 @@ final class Game: NSObject, ObservableObject {
     private var pendingCreate: [String: Any]?
     private var wantsConnection = false        // in on purpose? Then reconnect.
     private var attempts = 0
+    /// Set by "Back to lobby" / "Rematch" on the game-over screen: the next
+    /// LOBBY update is then allowed to leave that screen (see lobby-update).
+    private var wantsLobby = false
     private var heartbeat: Timer?
     private var clock: Timer?
     private var roundEnd: Date?
@@ -101,6 +104,7 @@ final class Game: NSObject, ObservableObject {
 
     func leave() {
         wantsConnection = false
+        wantsLobby = false
         pendingCreate = nil
         emit("leave-game", [:])
         tearDown()
@@ -217,6 +221,7 @@ final class Game: NSObject, ObservableObject {
     }
 
     func returnToLobby() {
+        wantsLobby = true
         emit("return-to-lobby", [:])
     }
 
@@ -277,7 +282,12 @@ final class Game: NSObject, ObservableObject {
             // how everyone sees who has already locked in. Reading it as "you are
             // in the lobby now" kicks you out of the running round. So gameState
             // decides, not the message type.
-            if p.gameState == "LOBBY" && currentPhase != .end { currentPhase = .lobby }
+            // On the game-over screen only an explicit "Back to lobby" may leave
+            // it; otherwise a stray update would yank everyone off the scores.
+            if p.gameState == "LOBBY" && (currentPhase != .end || wantsLobby) {
+                currentPhase = .lobby
+                wantsLobby = false
+            }
             // The server can lift the lock (new round, return to lobby) -
             // then the button here should reopen as well.
             if let myEntry = p.players.first(where: { $0.id.text == ownId }) {

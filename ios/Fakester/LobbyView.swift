@@ -376,6 +376,7 @@ private struct LobbyHeaderBar: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(LobbyPressStyle(pressed: 0.92))
+                .accessibilityLabel(Text("Back"))
 
                 Text("Lobby")
                     .font(.brand(25, .heavy))
