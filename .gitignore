@@ -2,3 +2,5 @@ build/
 out/
 *.xcodeproj
 .DS_Store
+# Schriften holt das CI (siehe ios.yml)
+ios/Fakester/Schriften/

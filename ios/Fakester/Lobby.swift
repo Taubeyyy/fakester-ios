@@ -41,7 +41,7 @@ struct LobbyAnsicht: View {
                                 Text("LOBBY").etikett()
                                 ForEach(spiel.chat.suffix(6)) { z in
                                     Text(z.system ? z.text : "\(z.nickname): \(z.text)")
-                                        .font(.system(size: 13, design: .rounded))
+                                        .font(.marke(13))
                                         .foregroundColor(z.system ? Farbe.gedaempft : Farbe.schrift)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                 }
@@ -62,7 +62,7 @@ struct LobbyAnsicht: View {
                     .buttonStyle(Hauptknopf())
                 } else {
                     Text(L("Warten auf den Gastgeber…", "Waiting for the host…"))
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .font(.marke(14, .medium))
                         .foregroundColor(Farbe.gedaempft)
                         .frame(height: 54)
                 }
@@ -81,11 +81,11 @@ struct LobbyAnsicht: View {
     private func Zeile(_ links: String, _ rechts: String) -> some View {
         HStack {
             Text(links)
-                .font(.system(size: 14, design: .rounded))
+                .font(.marke(14))
                 .foregroundColor(Farbe.gedaempft)
             Spacer()
             Text(rechts)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.marke(14, .semibold))
                 .foregroundColor(Farbe.schrift)
         }
     }
@@ -102,10 +102,10 @@ struct SpielerZeile: View {
             Text(spieler.emoji ?? "🎵")
                 .font(.system(size: 18))
                 .frame(width: 30, height: 30)
-                .background(Farbe.grund, in: Circle())
+                .background(Farbe.grund3, in: Circle())
 
             Text(spieler.nickname)
-                .font(.system(size: 15, weight: binIch ? .bold : .medium, design: .rounded))
+                .font(.marke(15, binIch ? .bold : .medium))
                 .foregroundColor(spieler.isEliminated ? Farbe.gedaempft : Farbe.schrift)
                 .strikethrough(spieler.isEliminated)
                 .lineLimit(1)
@@ -119,7 +119,7 @@ struct SpielerZeile: View {
 
             if punkte {
                 Text("\(spieler.score)")
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .font(.mono(15))
                     .foregroundColor(Farbe.schrift)
                     .monospacedDigit()
             } else if spieler.isReady {
@@ -131,7 +131,8 @@ struct SpielerZeile: View {
     @ViewBuilder
     private func Abzeichen(_ text: String, _ farbe: Color) -> some View {
         Text(text)
-            .font(.system(size: 9, weight: .heavy, design: .rounded))
+            .font(.marke(9, .heavy))
+            .tracking(0.6)
             .foregroundColor(farbe == Farbe.kante ? Farbe.gedaempft : Farbe.grund)
             .padding(.horizontal, 5).padding(.vertical, 2)
             .background(farbe, in: Capsule())
@@ -148,11 +149,11 @@ struct Kopfzeile: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(titel)
-                    .font(.system(size: 20, weight: .black, design: .rounded))
+                    .font(.marke(22, .black))
                     .foregroundColor(Farbe.schrift)
                 if let u = unterzeile {
                     Text(u)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.marke(12, .medium))
                         .foregroundColor(Farbe.gedaempft)
                 }
             }
@@ -163,7 +164,8 @@ struct Kopfzeile: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(Farbe.gedaempft)
                         .frame(width: 36, height: 36)
-                        .background(Farbe.flaeche, in: Circle())
+                        .background(Circle().fill(Farbe.flaeche))
+                        .overlay(Circle().strokeBorder(Farbe.kante, lineWidth: 1))
                 }
             }
         }
@@ -182,14 +184,14 @@ struct LadeAnsicht: View {
         VStack(spacing: 18) {
             if let z = spiel.zaehler {
                 Text("\(z)")
-                    .font(.system(size: 92, weight: .black, design: .rounded))
+                    .font(.marke(92, .black))
                     .foregroundColor(Farbe.akzent)
                     .transition(.scale.combined(with: .opacity))
                     .id(z)
             } else {
                 ProgressView().tint(Farbe.akzent).scaleEffect(1.3)
                 Text(spiel.ladetext.isEmpty ? L("Songs werden geladen…", "Loading songs…") : spiel.ladetext)
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .font(.marke(15, .semibold))
                     .foregroundColor(Farbe.schrift)
 
                 if let l = spiel.ladestand, l.total > 0 {
@@ -198,7 +200,7 @@ struct LadeAnsicht: View {
                             .tint(Farbe.akzent)
                             .frame(width: 220)
                         Text(L("\(l.playable) spielbar von \(l.checked) geprüft", "\(l.playable) playable of \(l.checked) checked"))
-                            .font(.system(size: 12, design: .rounded))
+                            .font(.marke(12))
                             .foregroundColor(Farbe.gedaempft)
                             .monospacedDigit()
                     }

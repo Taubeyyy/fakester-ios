@@ -60,22 +60,22 @@ struct RueckmeldungsBlatt: View {
             VStack(alignment: .leading, spacing: 14) {
                 Text(L("Was ist kaputt, was fehlt, was nervt? Kurz reicht.",
                        "What's broken, what's missing, what's annoying? Short is fine."))
-                    .font(.system(size: 14, design: .rounded))
+                    .font(.marke(14))
                     .foregroundColor(Farbe.gedaempft)
 
                 TextEditor(text: $text)
                     .focused($fokus)
                     .scrollContentBackground(.hidden)
-                    .font(.system(size: 16, design: .rounded))
+                    .font(.marke(16))
                     .foregroundColor(Farbe.schrift)
                     .padding(10)
                     .frame(minHeight: 160)
-                    .background(Farbe.flaeche, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(Farbe.grund3, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Farbe.kante, lineWidth: 1))
 
                 if let fehler {
                     Text(fehler)
-                        .font(.system(size: 13, design: .rounded))
+                        .font(.marke(13))
                         .foregroundColor(Farbe.schlecht)
                 }
 
@@ -88,7 +88,7 @@ struct RueckmeldungsBlatt: View {
 
                 Text(L("Geht direkt an den Entwickler. Ohne Namen, nur mit Bildschirm und App-Version.",
                        "Goes straight to the developer. No name, just the screen and app version."))
-                    .font(.system(size: 12, design: .rounded))
+                    .font(.marke(12))
                     .foregroundColor(Farbe.gedaempft)
                 Spacer()
             }

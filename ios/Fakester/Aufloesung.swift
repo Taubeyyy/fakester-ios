@@ -16,16 +16,16 @@ struct AufloesungAnsicht: View {
                                 Cover(adresse: t.albumArt)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(t.title)
-                                        .font(.system(size: 17, weight: .heavy, design: .rounded))
+                                        .font(.marke(17, .heavy))
                                         .foregroundColor(Farbe.schrift)
                                         .lineLimit(2)
                                     Text(t.artist)
-                                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                                        .font(.marke(14, .medium))
                                         .foregroundColor(Farbe.gedaempft)
                                         .lineLimit(1)
                                     if let j = t.year {
                                         Text(String(j))
-                                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                                            .font(.mono(13))
                                             .foregroundColor(Farbe.akzentHell)
                                             .monospacedDigit()
                                     }
@@ -38,7 +38,7 @@ struct AufloesungAnsicht: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("SNEAKY MODE").etikett()
                                 Text(L("Der Song bleibt diesmal verdeckt.", "The song stays hidden this time."))
-                                    .font(.system(size: 14, design: .rounded))
+                                    .font(.marke(14))
                                     .foregroundColor(Farbe.schrift)
                             }
                         }
@@ -51,7 +51,7 @@ struct AufloesungAnsicht: View {
                                     Text(L("DEINE RUNDE", "YOUR ROUND")).etikett()
                                     Spacer()
                                     Text("+\(blatt.total)")
-                                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                                        .font(.marke(14, .heavy))
                                         .foregroundColor(blatt.total > 0 ? Farbe.gut : Farbe.gedaempft)
                                         .monospacedDigit()
                                 }
@@ -59,11 +59,11 @@ struct AufloesungAnsicht: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         HStack {
                                             Text(eintrag.wert.text)
-                                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                                .font(.marke(14, .medium))
                                                 .foregroundColor(eintrag.wert.points > 0 ? Farbe.schrift : Farbe.gedaempft)
                                             Spacer()
                                             Text(eintrag.wert.points > 0 ? "+\(eintrag.wert.points)" : "0")
-                                                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                                                .font(.marke(14, .heavy))
                                                 .foregroundColor(eintrag.wert.points > 0 ? Farbe.gut : Farbe.gedaempft)
                                                 .monospacedDigit()
                                         }
@@ -74,7 +74,7 @@ struct AufloesungAnsicht: View {
                                            let eigene = blatt.ownAnswer?[eintrag.schluessel]?.text,
                                            !eigene.isEmpty {
                                             Text(L("du: \(eigene)", "you: \(eigene)"))
-                                                .font(.system(size: 12, design: .rounded))
+                                                .font(.marke(12))
                                                 .foregroundColor(Farbe.schlecht.opacity(0.9))
                                         }
                                     }
@@ -100,7 +100,7 @@ struct AufloesungAnsicht: View {
             }
 
             Text(L("Gleich geht es weiter…", "Next round coming up…"))
-                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .font(.marke(13, .medium))
                 .foregroundColor(Farbe.gedaempft)
                 .padding(.bottom, 16)
         }
@@ -127,23 +127,23 @@ struct EndeAnsicht: View {
                         Karte {
                             HStack(spacing: 12) {
                                 Text("\(platz + 1)")
-                                    .font(.system(size: 18, weight: .black, design: .rounded))
+                                    .font(.marke(18, .black))
                                     .foregroundColor(platz == 0 ? Farbe.akzent : Farbe.gedaempft)
                                     .frame(width: 26)
                                     .monospacedDigit()
 
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(s.nickname)
-                                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                                        .font(.marke(16, .bold))
                                         .foregroundColor(Farbe.schrift)
                                         .lineLimit(1)
                                     Text(L("\(s.correctAnswers) richtig · längste Serie \(s.bestStreak)",
                                            "\(s.correctAnswers) correct · best streak \(s.bestStreak)"))
-                                        .font(.system(size: 12, design: .rounded))
+                                        .font(.marke(12))
                                         .foregroundColor(Farbe.gedaempft)
                                     if let b = s.rewards, b.xp > 0 || b.spots > 0 || b.goldSpots > 0 {
                                         Text(belohnungText(b))
-                                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                            .font(.marke(12, .semibold))
                                             .foregroundColor(Farbe.akzentHell)
                                     }
                                 }
@@ -151,7 +151,7 @@ struct EndeAnsicht: View {
                                 Spacer(minLength: 0)
 
                                 Text("\(s.score)")
-                                    .font(.system(size: 20, weight: .black, design: .rounded))
+                                    .font(.mono(20))
                                     .foregroundColor(Farbe.schrift)
                                     .monospacedDigit()
                             }
@@ -165,11 +165,11 @@ struct EndeAnsicht: View {
                                 ForEach(Array(lieder.enumerated()), id: \.offset) { _, t in
                                     VStack(alignment: .leading, spacing: 1) {
                                         Text(t.title)
-                                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                            .font(.marke(14, .semibold))
                                             .foregroundColor(Farbe.schrift)
                                             .lineLimit(1)
                                         Text(t.year.map { "\(t.artist) · \($0)" } ?? t.artist)
-                                            .font(.system(size: 12, design: .rounded))
+                                            .font(.marke(12))
                                             .foregroundColor(Farbe.gedaempft)
                                             .lineLimit(1)
                                     }

@@ -90,8 +90,8 @@ struct RundenAnsicht: View {
                 } label: {
                     HStack {
                         Text(m.text)
-                            .font(.system(size: 15, weight: gewaehlt ? .bold : .medium, design: .rounded))
-                            .foregroundColor(gewaehlt ? Farbe.grund : Farbe.schrift)
+                            .font(.marke(15, gewaehlt ? .heavy : .semibold))
+                            .foregroundColor(gewaehlt ? Farbe.aufAkzent : Farbe.schrift)
                             .multilineTextAlignment(.leading)
                             .lineLimit(2)
                         Spacer(minLength: 6)
@@ -99,12 +99,15 @@ struct RundenAnsicht: View {
                     .padding(.horizontal, 14)
                     .frame(minHeight: 48)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(gewaehlt ? Farbe.akzent : Farbe.grund,
-                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(gewaehlt ? .clear : Farbe.kante, lineWidth: 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(gewaehlt ? AnyShapeStyle(Farbe.verlauf) : AnyShapeStyle(Farbe.grund3))
                     )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(gewaehlt ? Color.white.opacity(0.12) : Farbe.linie, lineWidth: 1.5)
+                    )
+                    .shadow(color: gewaehlt ? Farbe.akzent.opacity(0.36) : .clear, radius: 10, x: 0, y: 2)
                 }
                 .buttonStyle(.plain)
             }
@@ -155,7 +158,7 @@ struct Plattenteller: View {
 
             if spiel.runde?.previewUrl == nil {
                 Text(L("Für diesen Song gibt es keine Vorschau.", "No preview for this song."))
-                    .font(.system(size: 12, design: .rounded))
+                    .font(.marke(12))
                     .foregroundColor(Farbe.gedaempft)
             }
         }
@@ -181,7 +184,7 @@ struct Uhr: View {
         VStack(spacing: 6) {
             GeometryReader { raum in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Farbe.flaeche)
+                    Capsule().fill(Farbe.grund3)
                     Capsule().fill(farbe).frame(width: raum.size.width * anteil)
                 }
             }
@@ -189,7 +192,7 @@ struct Uhr: View {
             .animation(.linear(duration: 0.25), value: anteil)
 
             Text("\(rest)s")
-                .font(.system(size: 13, weight: .heavy, design: .rounded))
+                .font(.mono(13))
                 .foregroundColor(farbe)
                 .monospacedDigit()
         }

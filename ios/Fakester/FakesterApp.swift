@@ -90,7 +90,7 @@ struct Warten: View {
         VStack(spacing: 14) {
             ProgressView().tint(Farbe.akzent)
             Text(text)
-                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .font(.marke(15, .medium))
                 .foregroundColor(Farbe.gedaempft)
         }
     }
@@ -103,12 +103,11 @@ struct Durchsage: View {
     var body: some View {
         if let text = spiel.meldung {
             Text(text)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.marke(14, .semibold))
                 .foregroundColor(Farbe.schrift)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 11)
-                .background(Farbe.flaeche, in: Capsule())
-                .overlay(Capsule().strokeBorder(Farbe.kante, lineWidth: 1))
+                .background(Glas(radius: 999))
                 .padding(.top, 8)
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .task(id: text) {

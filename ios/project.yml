@@ -38,6 +38,9 @@ targets:
         # Vorschau-Schnipsel, die Apple/Deezer teils ueber http ausliefern.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoadsInMedia: true
+        # Schriften wie auf fakester.app - die Dateien holt das CI aus google/fonts
+        # (OFL) nach Fakester/Schriften, siehe .github/workflows/ios.yml.
+        UIAppFonts: [BricolageGrotesque.ttf, DMMono-Regular.ttf, DMMono-Medium.ttf]
         UIStatusBarStyle: UIStatusBarStyleLightContent
         UIUserInterfaceStyle: Dark
         CFBundleURLTypes:

@@ -1,17 +1,35 @@
 import SwiftUI
+import UIKit
+import CoreText
 
-/// Das Aussehen, abgeglichen mit fakester.app - damit die App nicht aussieht wie
-/// ein fremdes Programm, das zufaellig dieselben Daten zeigt.
+/// Das Aussehen, abgeglichen mit fakester.app/fakester/style.css - damit die App
+/// nicht aussieht wie ein fremdes Programm, das zufaellig dieselben Daten zeigt.
+/// Die Namen in Klammern sind die CSS-Variablen im Browser.
 enum Farbe {
-    static let grund     = Color(hex: 0x07070C)
-    static let flaeche   = Color(hex: 0x12121B)
-    static let kante     = Color(hex: 0x24243A)
-    static let akzent    = Color(hex: 0xB15CFF)
-    static let akzentHell = Color(hex: 0xC9B8FC)
-    static let schrift   = Color(hex: 0xF2F0FF)
-    static let gedaempft = Color(hex: 0x9A96B8)
-    static let gut       = Color(hex: 0x3DD68C)
-    static let schlecht  = Color(hex: 0xE8465F)
+    static let grund      = Color(hex: 0x07070C)                 // --bg
+    static let grund3     = Color(hex: 0x15151F)                 // --bg3 (Eingabefelder)
+    static let grund4     = Color(hex: 0x1E1E2B)                 // --bg4 (Feld mit Fokus)
+    static let flaeche    = Color(hex: 0x1A1A26).opacity(0.72)   // --bg-elev (Karten, Glas)
+    static let linie      = Color.white.opacity(0.06)            // --line
+    static let kante      = Color.white.opacity(0.12)            // --line2
+    static let akzent     = Color(hex: 0xB15CFF)                 // --green-hi (heisst im CSS noch "green")
+    static let akzentTief = Color(hex: 0x8B3FD6)                 // --green
+    static let akzentHell = Color(hex: 0xC77DFF)
+    static let schrift    = Color(hex: 0xF4F4F7)                 // --t1
+    static let gedaempft  = Color(hex: 0xA8A8B8)                 // --t2
+    static let leise      = Color(hex: 0x65657A)                 // --t3
+    static let gut        = Color(hex: 0x1ED760)                 // --ok
+    static let schlecht   = Color(hex: 0xFF4D5E)                 // --red
+    static let gold       = Color(hex: 0xF5A623)                 // --gold
+    /// Schrift auf dem lila Knopf - im Browser genau so (#00220f).
+    static let aufAkzent  = Color(hex: 0x00220F)
+
+    /// --grad-primary: der grosse Knopf
+    static let verlauf = LinearGradient(colors: [Color(hex: 0x7B2FBE), Color(hex: 0xB15CFF)],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing)
+    /// --grad-hero: "STER" im Schriftzug
+    static let verlaufHeld = LinearGradient(colors: [Color(hex: 0x7B2FBE), Color(hex: 0xC77DFF), Color(hex: 0x7B2FBE)],
+                                            startPoint: .leading, endPoint: .trailing)
 }
 
 extension Color {
@@ -24,90 +42,224 @@ extension Color {
     }
 }
 
-/// Der Hintergrund des ganzen Spiels: fast schwarz, mit einem Schimmer Violett
-/// oben - wie im Browser.
-struct Buehne: View {
-    var body: some View {
-        ZStack {
-            Farbe.grund
-            RadialGradient(colors: [Farbe.akzent.opacity(0.22), .clear],
-                           center: .top, startRadius: 0, endRadius: 420)
+// MARK: - Schrift
+
+/// Die Schriften der Webseite: Bricolage Grotesque fuer alles, DM Mono fuer PINs
+/// und Zahlen. Die Dateien holt das CI aus google/fonts (OFL) nach
+/// Fakester/Schriften. Fehlen sie, faellt alles auf die Systemschrift zurueck.
+enum Schrift {
+    /// Je nach Datei heisst die Familie "Bricolage Grotesque" oder mit Zusatz -
+    /// also danach suchen statt den Namen fest anzunehmen.
+    static let familie: String = UIFont.familyNames.first(where: { $0.hasPrefix("Bricolage") }) ?? "Bricolage Grotesque"
+    static let da: Bool = UIFont.familyNames.contains(familie)
+
+    /// Bricolage ist eine variable Schrift (wght 200-800, opsz 12-96); die
+    /// Achsen werden direkt gesetzt, das klappt auch unter iOS 16 sicher.
+    static func ui(_ groesse: CGFloat, _ gewicht: Font.Weight) -> UIFont {
+        guard da else {
+            return UIFont.systemFont(ofSize: groesse, weight: uiGewicht(gewicht))
         }
-        .ignoresSafeArea()
+        let wght: UInt32 = 0x77676874   // 'wght'
+        let opsz: UInt32 = 0x6F70737A   // 'opsz'
+        let achsen: [NSNumber: NSNumber] = [
+            NSNumber(value: wght): NSNumber(value: Double(zahl(gewicht))),
+            NSNumber(value: opsz): NSNumber(value: Double(min(max(groesse, 12), 96)))
+        ]
+        let variation = UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
+        let attribute: [UIFontDescriptor.AttributeName: Any] = [.family: familie, variation: achsen]
+        return UIFont(descriptor: UIFontDescriptor(fontAttributes: attribute), size: groesse)
+    }
+
+    static func mono(_ groesse: CGFloat, fett: Bool) -> UIFont {
+        let name: String = fett ? "DMMono-Medium" : "DMMono-Regular"
+        if let f = UIFont(name: name, size: groesse) { return f }
+        return UIFont.monospacedSystemFont(ofSize: groesse, weight: fett ? .bold : .regular)
+    }
+
+    private static func zahl(_ g: Font.Weight) -> CGFloat {
+        switch g {
+        case .ultraLight, .thin: return 200
+        case .light: return 300
+        case .medium: return 500
+        case .semibold: return 600
+        case .bold: return 700
+        case .heavy, .black: return 800
+        default: return 400
+        }
+    }
+
+    private static func uiGewicht(_ g: Font.Weight) -> UIFont.Weight {
+        switch g {
+        case .ultraLight: return .ultraLight
+        case .thin: return .thin
+        case .light: return .light
+        case .medium: return .medium
+        case .semibold: return .semibold
+        case .bold: return .bold
+        case .heavy: return .heavy
+        case .black: return .black
+        default: return .regular
+        }
     }
 }
 
-/// Eine Karte, wie sie im Spiel ueberall steht.
+extension Font {
+    /// Die Spielschrift (Bricolage Grotesque).
+    static func marke(_ groesse: CGFloat, _ gewicht: Font.Weight = .regular) -> Font {
+        Font(Schrift.ui(groesse, gewicht) as CTFont)
+    }
+
+    /// DM Mono - fuer PIN und Punkte, wie im Browser.
+    static func mono(_ groesse: CGFloat, fett: Bool = true) -> Font {
+        Font(Schrift.mono(groesse, fett: fett) as CTFont)
+    }
+}
+
+// MARK: - Bausteine
+
+/// Der Hintergrund des ganzen Spiels: fast schwarz mit drei weichen Lichtflecken
+/// (--grad-mesh), die langsam treiben.
+struct Buehne: View {
+    @State private var treiben = false
+
+    var body: some View {
+        GeometryReader { geo in
+            let b: CGFloat = geo.size.width
+            let h: CGFloat = geo.size.height
+            ZStack {
+                Farbe.grund
+                Ellipse()
+                    .fill(RadialGradient(colors: [Color(hex: 0x7B2FBE).opacity(0.22), .clear],
+                                         center: .center, startRadius: 0, endRadius: b * 0.55))
+                    .frame(width: b * 1.6, height: h * 0.7)
+                    .position(x: b * 0.2, y: 0)
+                Ellipse()
+                    .fill(RadialGradient(colors: [Color(hex: 0x9D6BFF).opacity(0.14), .clear],
+                                         center: .center, startRadius: 0, endRadius: b * 0.45))
+                    .frame(width: b * 1.2, height: h * 0.5)
+                    .position(x: b * 0.8, y: h * 0.1)
+                Ellipse()
+                    .fill(RadialGradient(colors: [Color(hex: 0x3ED0FF).opacity(0.08), .clear],
+                                         center: .center, startRadius: 0, endRadius: b * 0.6))
+                    .frame(width: b * 1.6, height: h * 0.5)
+                    .position(x: b * 0.5, y: h)
+            }
+            .scaleEffect(treiben ? 1.05 : 1)
+            .offset(y: treiben ? -h * 0.02 : 0)
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            withAnimation(.easeInOut(duration: 24).repeatForever(autoreverses: true)) { treiben = true }
+        }
+    }
+}
+
+/// Eine Karte wie .section-card: Glas, feine Kante, Schatten.
 struct Karte<Inhalt: View>: View {
-    var polster: CGFloat = 16
+    var polster: CGFloat = 18
     @ViewBuilder var inhalt: Inhalt
 
     var body: some View {
         inhalt
             .padding(polster)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Farbe.flaeche, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(Farbe.kante, lineWidth: 1)
-            )
+            .background(Glas(radius: 16))
     }
 }
 
-/// Der grosse Knopf. Ein Spiel auf Zeit wird mit dem Daumen bedient, also ist
-/// die Trefferflaeche hier bewusst gross und nicht an die Schrift gebunden.
+/// Der Glas-Grund von Karten, Bubbles und dem Profil-Chip (--bg-elev + blur).
+struct Glas: View {
+    var radius: CGFloat = 16
+    var kante: Color = Farbe.kante
+
+    var body: some View {
+        let form = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        ZStack {
+            form.fill(.ultraThinMaterial)
+            form.fill(Farbe.flaeche)
+            form.strokeBorder(kante, lineWidth: 1)
+        }
+        .shadow(color: Color.black.opacity(0.35), radius: 4, x: 0, y: 2)
+    }
+}
+
+/// Der grosse Knopf (.btn-primary .btn-large). Ein Spiel auf Zeit wird mit dem
+/// Daumen bedient, also ist die Trefferflaeche bewusst gross.
 struct Hauptknopf: ButtonStyle {
     var farbe: Color = Farbe.akzent
     var aus: Bool = false
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 17, weight: .bold, design: .rounded))
-            .foregroundColor(aus ? Farbe.gedaempft : Color(hex: 0x120A1E))
+        let form = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        let lila: Bool = farbe == Farbe.akzent
+        let grund: AnyShapeStyle = aus ? AnyShapeStyle(Farbe.grund4)
+            : (lila ? AnyShapeStyle(Farbe.verlauf) : AnyShapeStyle(farbe))
+        // Gruen (fertig) bekommt dunkle Schrift, gedaempfte Flaechen helle.
+        let schrift: Color = aus ? Farbe.leise
+            : (lila ? Farbe.aufAkzent : (farbe == Farbe.gut ? Color(hex: 0x00220F) : Farbe.schrift))
+        return configuration.label
+            .font(.marke(16, .heavy))
+            .tracking(0.3)
+            .foregroundColor(schrift)
             .frame(maxWidth: .infinity)
             .frame(height: 54)
-            .background(aus ? Farbe.kante : farbe,
-                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .scaleEffect(configuration.isPressed ? 0.975 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .background(form.fill(grund))
+            .overlay(form.strokeBorder(Color.white.opacity(aus ? 0.06 : 0.12), lineWidth: 1))
+            .shadow(color: (aus || farbe == Farbe.kante) ? .clear : farbe.opacity(0.36), radius: 10, x: 0, y: 2)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 
+/// .btn-secondary .btn-large: Glas mit Kante.
 struct Nebenknopf: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 16, weight: .semibold, design: .rounded))
+            .font(.marke(16, .heavy))
+            .tracking(0.3)
             .foregroundColor(Farbe.schrift)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(Farbe.flaeche, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Farbe.kante, lineWidth: 1)
-            )
-            .scaleEffect(configuration.isPressed ? 0.975 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .frame(height: 54)
+            .background(Glas(radius: 16))
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 
 extension Text {
-    /// Die Ueberschriften im Spiel sind durchweg gesperrt und klein - das traegt
-    /// den Wiedererkennungswert, nicht die Farbe.
+    /// Die Ueberschriften im Spiel (.section-title): klein, fett, gesperrt, grau.
     func etikett() -> some View {
-        self.font(.system(size: 11, weight: .heavy, design: .rounded))
-            .tracking(1.6)
-            .foregroundColor(Farbe.gedaempft)
+        self.font(.marke(12, .heavy))
+            .tracking(1.2)
+            .foregroundColor(Farbe.leise)
     }
 }
 
-/// Der Schriftzug, der auf jedem Bildschirm oben steht.
+/// Der Schriftzug: FAKE weiss, STER mit schimmerndem Lila-Verlauf.
 struct Schriftzug: View {
+    var groesse: CGFloat = 30
+    @State private var schimmer = false
+
     var body: some View {
         HStack(spacing: 0) {
             Text("FAKE").foregroundColor(Farbe.schrift)
-            Text("STER").foregroundColor(Farbe.akzent)
+            Text("STER")
+                .foregroundColor(.clear)
+                .overlay(
+                    GeometryReader { geo in
+                        Farbe.verlaufHeld
+                            .frame(width: geo.size.width * 2)
+                            .offset(x: schimmer ? -geo.size.width : 0)
+                    }
+                    .mask { Text("STER") }
+                )
         }
-        .font(.system(size: 30, weight: .black, design: .rounded))
-        .tracking(-0.5)
+        .font(.marke(groesse, .black))
+        .tracking(-0.04 * groesse)
+        .lineLimit(1)
+        .shadow(color: Color(hex: 0x7B2FBE).opacity(0.3), radius: 16, x: 0, y: 8)
+        .onAppear {
+            withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) { schimmer = true }
+        }
     }
 }
