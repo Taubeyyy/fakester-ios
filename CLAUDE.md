@@ -39,12 +39,22 @@ ein React-Quelltext existiert nirgends mehr.
   `--accent #34d399`, `--destructive #f87171`, `--radius .875rem`). Welche Datei gerade gilt, sagt
   `grep -oE "assets/index-[A-Za-z0-9_-]+\.css" /var/www/fakester-beta/index.html`.
   `--acc` setzt die App zur Laufzeit auf die ausgerüstete Farbe, Vorgabe `#b15cff`.
+  Die Flächen, die man wirklich sieht, sind meist nicht `--card`, sondern `rgba(24,23,39,.92)` (`Farbe.karte`).
+- **Schrift: Helvetica, nicht Bricolage.** Das Bundle fragt per Inline-Stil nach „Bricolage Grotesque"
+  und „DM Sans", liefert die Dateien aber als „… Variable" aus – die Namen passen nicht, kein Browser
+  lädt sie (`document.fonts` zeigt nur Font Awesome). Es greift `sans-serif`, auf dem iPhone Helvetica.
+  Ein paar Stellen (Auflösungsblatt, Gast-Hinweis) nutzen Tailwinds `system-ui` = San Francisco.
+  Darum ist `Font.marke` Helvetica. Wird der Namensfehler auf der Seite behoben, hier nachziehen.
 - **Der Aufbau jedes Bildschirms steht in `ios/Referenz-Weboberflaeche.md`** – aufgenommen durch
   Durchspielen im Handyformat. Vom Handy aus ist das die einzige Quelle, es gibt dort keinen Browser.
 - **Die Farben sagen nichts über den Aufbau**, und der weicht am stärksten ab. Den gibt es nur
   durch Hinschauen: Seite im Handyformat (375×812) öffnen und durchspielen. Die Auflösung dauert
   nur `revealTime` (Vorgabe 5 s) – Runde auslaufen lassen und sofort knipsen, sonst ist sie weg.
   Wer keinen Browser hat, baut nur das um, was er belegen kann, und lässt den Rest stehen.
+  In einer Cloud-Sitzung geht es mit Playwright + Chromium: Proxy-CA per `certutil` in
+  `~/.pki/nssdb` eintragen; den WebSocket bekommt Chromium durch den Proxy nicht (302), also mit
+  `page.routeWebSocket` an einen `undici`-WebSocket in Node weiterreichen. Messwerte je Element per
+  `getComputedStyle` + `getBoundingClientRect` abgreifen – CSS-px sind iOS-Punkte.
 - Was sich nicht belegen lässt, kommt **nicht** rein. Beispiel: die „online"-Zahl auf dem
   Startbildschirm war lange weggelassen, bis die Quelle gefunden war (`GET /stats/live`).
 - Das Web-Bundle (`https://fakester.app/assets/index-*.js`) ist lesbar und zeigt, welche Nachrichten

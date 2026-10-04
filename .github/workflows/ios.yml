@@ -37,18 +37,6 @@ jobs:
           set -o pipefail
           { swiftc -O Shared/*.swift Tests/Mitschnitt.swift Tests/main.swift -o /tmp/logic && /tmp/logic; } 2>&1 | tee "$RUNNER_TEMP/build.log"
 
-      # Die Schriften der Webseite (Bricolage Grotesque, DM Mono; SIL Open Font
-      # License). Liegen nicht im Repo, sondern kommen frisch aus google/fonts.
-      - name: Schriften holen
-        run: |
-          set -e
-          mkdir -p Fakester/Schriften
-          Q=https://raw.githubusercontent.com/google/fonts/main/ofl
-          curl -fsSL --retry 3 "$Q/bricolagegrotesque/BricolageGrotesque%5Bopsz%2Cwdth%2Cwght%5D.ttf" -o Fakester/Schriften/BricolageGrotesque.ttf
-          curl -fsSL --retry 3 "$Q/dmmono/DMMono-Regular.ttf" -o Fakester/Schriften/DMMono-Regular.ttf
-          curl -fsSL --retry 3 "$Q/dmmono/DMMono-Medium.ttf" -o Fakester/Schriften/DMMono-Medium.ttf
-          ls -l Fakester/Schriften
-
       - name: Xcode-Projekt erzeugen
         run: xcodegen generate
 

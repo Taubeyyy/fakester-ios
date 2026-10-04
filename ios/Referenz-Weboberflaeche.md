@@ -28,7 +28,21 @@ welches gerade gilt sagt `grep -oE "assets/index-[A-Za-z0-9_-]+\.css" /var/www/f
 die Akzentfarbe setzt die App auf den ausgerüsteten Gegenstand. Vorgabe ist das
 kräftige Lila `#b15cff` – das ist das, was man sieht.
 
-Schriften: **Bricolage Grotesque** für alles, **DM Mono** für PIN, Punkte und Zeiten.
+Schrift: **Helvetica** (auf dem iPhone). Das Bundle verlangt „Bricolage Grotesque“ / „DM Sans“,
+deklariert sie aber als „… Variable“ – geladen wird nichts, es greift `sans-serif`. Wo Tailwinds
+`system-ui` gilt (Auflösungsblatt, Gast-Hinweis), ist es San Francisco. Keine Monospace-Schrift.
+
+Gemessene Grundwerte (CSS-px = Punkte):
+
+| Was | Wert |
+|---|---|
+| Hintergrund | `#07070e`, Punkteraster 26 px (1 px weiß 4 %), Flecken: lila `#7000d7` 600 px oben links (28 %, blur 90), grün `#065f46` 520 px unten rechts (20 %), magenta `#a21caf` 280 px Mitte (12 %) |
+| Karte | `rgba(24,23,39,.92)`, Rand weiß 7 % oder lila `rgba(177,92,255,.22–.3)`, Ecken 16 (Anmeldekarte 24) |
+| Hauptknopf | `#b15cff` flach, Schrift weiß 15 fett, Ecken 16, Höhe 50–55, Schatten `0 8 24 rgba(112,0,215,.3)` + heller Innenstrich oben |
+| Nebenknopf („Join“) | `rgba(20,18,38,.75)`, Rand weiß 9 %, Schrift `#d8d7ee` 14 halbfett |
+| Leave | Pille `rgba(239,68,68,.1)`, Rand `.3`, Schrift `#f87171` 11 fett |
+| Etiketten | 10 fett, 1 px gesperrt, Großbuchstaben, `#8d8ba4` |
+| Antwortknopf | `rgba(255,255,255,.04)`, Rand weiß 8 %, Ecken 18, Schrift 12 halbfett `#b0aed2` |
 
 ## Anmelden
 
