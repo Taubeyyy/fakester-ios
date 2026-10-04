@@ -1,99 +1,175 @@
 import SwiftUI
 
-/// Die Lobby wie im Browser: Infoleiste mit PIN, Spielerkarten im Raster,
-/// unten der Startknopf.
-/// .player-card: rundes Symbol, Name, kleine Zeile drunter. Host in Gold,
-/// bereit mit lila Haken oben rechts.
+/// Eine Kachel im PLAYERS-Raster der Lobby, gemessen an fakester.app (375×812):
+/// 80×113, Ecken 16, Polster 10. Rundes Bild (40), beim Gastgeber das goldene
+/// „Host"-Abzeichen am Bild und „♛ CREATOR" ueber dem Namen; der Name 10 pt
+/// fett in Lila. Die eigene Kachel ist lila hinterlegt und umrandet, die
+/// anderen fast unsichtbar. Wer die Verbindung verloren hat, wird blass.
 struct SpielerKarte: View {
     let spieler: Spieler
     var istHost = false
     var binIch = false
+    /// Hoehe der Rasterzeile - im Browser sind alle Kacheln einer Zeile gleich
+    /// hoch (CSS-Grid streckt sie). 0 = so hoch wie der Inhalt.
+    var hoehe: CGFloat = 0
 
-    var body: some View {
-        VStack(spacing: 8) {
-            symbol
-            Text(spieler.nickname)
-                .font(.marke(13, .heavy))
-                .foregroundColor(spieler.isEliminated ? Farbe.leise : Farbe.schrift)
-                .strikethrough(spieler.isEliminated)
-                .lineLimit(1)
-            Text(zusatz)
-                .font(.marke(10, .bold))
-                .tracking(0.6)
-                .foregroundColor(spieler.isConnected ? Farbe.leise : Farbe.schlecht)
-                .lineLimit(1)
+    /// Die natuerliche Hoehe ohne Streckung, mit denselben Zeilenhoehen wie im
+    /// Browser (Polster 10 + Rand 1, Bild 40, Abstand 6, Name 15 ...).
+    static func hoehe(spieler: Spieler, istHost: Bool) -> CGFloat {
+        var h: CGFloat = 11 + 40 + 6 + 15 + 11
+        if istHost { h += 14 }
+        if !spieler.isConnected {
+            h += 15.5
+        } else if spieler.isPro {
+            h += 13
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity)
-        .background(grund)
-        .overlay(alignment: .topTrailing) {
-            if spieler.isReady {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 10, weight: .black))
-                    .foregroundColor(Farbe.aufAkzent)
-                    .frame(width: 22, height: 22)
-                    .background(Circle().fill(Farbe.akzentTief))
-                    .shadow(color: Farbe.akzent.opacity(0.36), radius: 6)
-                    .padding(8)
-            }
-        }
-        .overlay(alignment: .top) {
-            if istHost {
-                Text("HOST")
-                    .font(.marke(9, .black))
-                    .tracking(0.9)
-                    .foregroundColor(Farbe.aufGold)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 3)
-                    .background(Capsule().fill(Farbe.verlaufGold))
-                    .shadow(color: Farbe.gold.opacity(0.32), radius: 5)
-                    .offset(y: -9)
-            }
-        }
-        .opacity(spieler.isConnected ? 1 : 0.6)
+        return h
     }
 
-    private var symbol: some View {
-        let verlauf: LinearGradient = istHost ? Farbe.verlaufGold : Farbe.verlauf
-        let schein: Color = istHost ? Farbe.gold.opacity(0.32) : Farbe.akzent.opacity(0.36)
-        return ZStack {
-            Circle().fill(verlauf)
-            if let e = spieler.emoji, !e.isEmpty {
-                Text(e).font(.system(size: 24))
-            } else {
-                Image(systemName: spieler.isBot ? "cpu" : "person.fill")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(istHost ? Farbe.aufGold : Farbe.aufAkzent)
-            }
+    var body: some View {
+        let form = RoundedRectangle(cornerRadius: 16, style: .circular)
+        let grund: Color = binIch ? Farbe.akzentTief.opacity(0.15) : Color.white.opacity(0.025)
+        let rand: Color = binIch ? Farbe.akzent.opacity(0.45) : Farbe.linie
+        return VStack(spacing: 6) {
+            bild
+            beschriftung
         }
-        .frame(width: 54, height: 54)
-        .shadow(color: schein, radius: 8)
+        .padding(11)
+        .frame(maxWidth: .infinity, minHeight: hoehe, alignment: .top)
+        .background(form.fill(grund))
+        .overlay(form.strokeBorder(rand, lineWidth: 1))
+        .opacity(spieler.isConnected ? 1 : 0.45)
+    }
+
+    private var bild: some View {
+        LobbyAvatar(spieler: spieler, groesse: 40)
+            .overlay(alignment: .topTrailing) {
+                if istHost {
+                    hostMarke.offset(x: 4, y: -4)
+                }
+            }
+    }
+
+    private var beschriftung: some View {
+        VStack(spacing: 0) {
+            if istHost {
+                creator.padding(.bottom, 2)
+            }
+            Text(spieler.nickname)
+                .font(.marke(10, .bold))
+                .foregroundColor(Farbe.akzent)
+                .lineLimit(1)
+                .frame(height: 15)
+            zusatz
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// "Host": 8 pt fett, #07070e auf #f59e0b, am Bild oben rechts (-4/-4).
+    private var hostMarke: some View {
+        Text("Host")
+            .font(.marke(8, .bold))
+            .foregroundColor(Farbe.grund)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 4)
+            .frame(height: 12)
+            .background(Capsule().fill(KartenFarbe.bernstein))
+    }
+
+    private var creator: some View {
+        HStack(spacing: 2) {
+            Image(systemName: "crown")
+                .font(.system(size: 6, weight: .semibold))
+            Text(L("ERSTELLER", "CREATOR"))
+                .font(.marke(8, .bold))
+                .lineLimit(1)
+        }
+        .foregroundColor(KartenFarbe.bernstein)
+        .frame(height: 12)
     }
 
     @ViewBuilder
-    private var grund: some View {
-        if istHost {
-            ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(LinearGradient(colors: [Farbe.gold.opacity(0.14), Farbe.flaeche],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing))
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(Farbe.gold, lineWidth: 1.5)
+    private var zusatz: some View {
+        if !spieler.isConnected {
+            Text(L("VERBINDET NEU…", "RECONNECTING…"))
+                .font(.marke(9, .bold))
+                .tracking(0.45)
+                .foregroundColor(KartenFarbe.bernstein)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .frame(height: 13.5)
+                .padding(.top, 2)
+        } else if spieler.isPro {
+            // PRO-Abzeichen: Krone 11, #fbbf24
+            Image(systemName: "crown")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(Farbe.gold)
+                .frame(height: 11)
+                .padding(.top, 2)
+        }
+    }
+}
+
+/// Das runde Spielerbild wie im Browser: weiss 7 % als Grund, darin das
+/// Profilbild - sonst das Spielersymbol in hellem Lila (--acc-pale), und wer
+/// gar kein Symbol hat, bekommt den ersten Buchstaben.
+struct LobbyAvatar: View {
+    let spieler: Spieler?
+    var name: String = ""
+    let groesse: CGFloat
+
+    var body: some View {
+        ZStack {
+            Circle().fill(Color.white.opacity(bildAdresse == nil ? 0.07 : 0.05))
+            if let url = bildAdresse {
+                AsyncImage(url: url) { phase in
+                    if let geladen = phase.image {
+                        geladen.resizable().scaledToFill()
+                    } else {
+                        ersatz
+                    }
+                }
+                .frame(width: groesse, height: groesse)
+                .clipShape(Circle())
+            } else {
+                ersatz
             }
-            .shadow(color: Farbe.gold.opacity(0.15), radius: 3)
+        }
+        .frame(width: groesse, height: groesse)
+    }
+
+    private var bildAdresse: URL? {
+        guard let s = spieler?.avatarUrl, s.hasPrefix("http") else { return nil }
+        return URL(string: s)
+    }
+
+    @ViewBuilder
+    private var ersatz: some View {
+        if let s = spieler, s.iconId != 0 {
+            Image(systemName: "person.fill")
+                .font(.system(size: groesse * 0.44))
+                .foregroundColor(KartenFarbe.blass)
         } else {
-            Glas(radius: 16, kante: binIch ? Farbe.akzentTief : Farbe.kante, dicke: 1.5)
+            Text(anfang)
+                .font(.marke(groesse * 0.42, .bold))
+                .foregroundColor(Farbe.schrift)
         }
     }
 
-    private var zusatz: String {
-        if !spieler.isConnected { return L("WEG", "AWAY") }
-        if spieler.watchOnly { return L("SCHAUT ZU", "WATCHING") }
-        if spieler.isBot { return "BOT" }
-        if binIch { return L("DU", "YOU") }
-        return spieler.isReady ? L("BEREIT", "READY") : L("SPIELER", "PLAYER")
+    private var anfang: String {
+        let n: String = spieler?.nickname ?? name
+        guard let c = n.first else { return "?" }
+        return String(c).uppercased()
     }
+}
+
+/// Farben, die nur hier vorkommen.
+private enum KartenFarbe {
+    /// #f59e0b - "Host", "CREATOR", "RECONNECTING…"
+    static let bernstein = Color(hex: 0xF59E0B)
+    /// --acc-pale zu #b15cff
+    static let blass = Color(hex: 0xCC95FF)
 }
 
 /// Eine Zeile in Listen (.result-score-row): dunkle Flaeche, Platz, Name, Punkte.
