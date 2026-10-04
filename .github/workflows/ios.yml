@@ -151,7 +151,7 @@ jobs:
           xcrun simctl install "$UDID" "$APP"
           mkdir -p fotos
           GAST="-gast.id guest-1791131740573-ope1d -gast.name Gast9694"
-          for S in anmeldung daheim erstellen rangliste lobby runde gewaehlt eingeloggt aufloesung ende; do
+          for S in anmeldung daheim beitreten gastsperre erstellen rangliste lobby runde gewaehlt eingeloggt aufloesung ende; do
             xcrun simctl terminate "$UDID" com.taubey.fakester 2>/dev/null || true
             if [ "$S" = anmeldung ]; then A=""; else A="$GAST"; fi
             xcrun simctl launch "$UDID" com.taubey.fakester -vorschau "$S" $A
