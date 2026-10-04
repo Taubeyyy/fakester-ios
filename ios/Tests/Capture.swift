@@ -11,7 +11,7 @@ import Foundation
 // Fehler bestaetigt statt ihn zu zeigen. Diese Schnipsel sind deshalb bewusst
 // unveraendert, samt Feldern, die die App gar nicht liest.
 
-enum Mitschnitt {
+enum Capture {
 
     /// `lobby-update`
     static let lobbyUpdate = #"""
@@ -64,7 +64,7 @@ enum Mitschnitt {
 """#
 
     /// `chat-message` eines Spielers (nicht System)
-    static let chatSpieler = #"""
+    static let chatPlayer = #"""
 {"type":"chat-message","payload":{"playerId":"guest-1791128959532-abcd1234","nickname":"TestBot","isPro":false,"isAdmin":false,"showAdminBadge":true,"showProBadge":true,"chatColor":null,"colorId":null,"text":"hallo text","ts":1791128961909}}
 """#
 

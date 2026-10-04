@@ -3,96 +3,96 @@ import SwiftUI
 /// Quests wie im Browser: Reiter Daily / Weekly / Milestones, je Quest eine
 /// Karte mit Fortschrittsbalken und rechts entweder die Belohnung (noch offen),
 /// der Abholknopf (geschafft) oder "Abgeholt". Nur mit Konto.
-struct QuestAnsicht: View {
+struct QuestsView: View {
     @EnvironmentObject private var api: Api
-    @Environment(\.dismiss) private var schliessen
+    @Environment(\.dismiss) private var close
 
-    @State private var reiter: Int = 0
-    @State private var stand: QuestStand?
-    @State private var laedt = true
-    @State private var fehler: String?
-    @State private var holt: String?
-    @State private var meldung: String?
+    @State private var tab: Int = 0
+    @State private var tally: QuestOverview?
+    @State private var loading = true
+    @State private var errorMessage: String?
+    @State private var claiming: String?
+    @State private var notice: String?
 
-    private let reiterNamen: [String] = ["Daily", "Weekly", "Milestones"]
+    private let tabNames: [String] = ["Daily", "Weekly", "Milestones"]
 
     var body: some View {
         VStack(spacing: 0) {
-            kopf
-            reiterLeiste
+            header
+            tabBar
             ScrollView {
                 VStack(spacing: 10) {
                     Text("Complete quests to earn Spots. New goals unlock as you play.")
-                        .font(.marke(13))
-                        .foregroundColor(Farbe.leise)
+                        .font(.brand(13))
+                        .foregroundColor(Palette.faint)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    if let f = fehler {
+                    if let f = errorMessage {
                         Text(f)
-                            .font(.marke(13, .semibold))
-                            .foregroundColor(Farbe.schlecht)
+                            .font(.brand(13, .semibold))
+                            .foregroundColor(Palette.bad)
                             .padding(.top, 20)
-                    } else if laedt && stand == nil {
-                        ProgressView().tint(Farbe.akzent).padding(.top, 40)
-                    } else if liste.isEmpty {
+                    } else if loading && tally == nil {
+                        ProgressView().tint(Palette.accent).padding(.top, 40)
+                    } else if items.isEmpty {
                         Text("Nothing here right now.")
-                            .font(.marke(13))
-                            .foregroundColor(Farbe.leise)
+                            .font(.brand(13))
+                            .foregroundColor(Palette.faint)
                             .padding(.top, 40)
                     }
-                    ForEach(liste) { q in
-                        QuestKarte(quest: q, holtGerade: holt == q.id) {
-                            Task { await abholen(q) }
+                    ForEach(items) { q in
+                        QuestCard(quest: q, isClaiming: claiming == q.id) {
+                            Task { await claim(q) }
                         }
                     }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
-            .refreshable { await laden() }
+            .refreshable { await load() }
         }
-        .background(Farbe.grund.ignoresSafeArea())
+        .background(Palette.base.ignoresSafeArea())
         .overlay(alignment: .top) {
-            if let m = meldung {
+            if let m = notice {
                 Text(m)
-                    .font(.marke(14, .semibold))
-                    .foregroundColor(Farbe.schrift)
+                    .font(.brand(14, .semibold))
+                    .foregroundColor(Palette.foreground)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 11)
-                    .background(Glas(radius: 999))
+                    .background(GlassPanel(radius: 999))
                     .padding(.top, 8)
                     .task(id: m) {
                         try? await Task.sleep(nanoseconds: 2_400_000_000)
-                        meldung = nil
+                        notice = nil
                     }
             }
         }
-        .task { await laden() }
+        .task { await load() }
     }
 
-    private var liste: [QuestEintrag] {
-        guard let s = stand else { return [] }
-        switch reiter {
-        case 1: return s.woechentlich
-        case 2: return s.meilensteine
-        default: return s.taeglich
+    private var items: [QuestItem] {
+        guard let s = tally else { return [] }
+        switch tab {
+        case 1: return s.weeklyQuests
+        case 2: return s.milestones
+        default: return s.dailyQuests
         }
     }
 
-    private var kopf: some View {
+    private var header: some View {
         HStack(spacing: 10) {
             Button {
-                schliessen()
+                close()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(Farbe.schrift)
+                    .foregroundColor(Palette.foreground)
                     .frame(width: 38, height: 38)
-                    .background(Circle().fill(Farbe.flaeche))
-                    .overlay(Circle().strokeBorder(Farbe.kante, lineWidth: 1))
+                    .background(Circle().fill(Palette.surface))
+                    .overlay(Circle().strokeBorder(Palette.rim, lineWidth: 1))
             }
             Text("Quests")
-                .font(.marke(24, .heavy))
-                .foregroundColor(Farbe.schrift)
+                .font(.brand(24, .heavy))
+                .foregroundColor(Palette.foreground)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
@@ -100,148 +100,148 @@ struct QuestAnsicht: View {
         .padding(.bottom, 8)
     }
 
-    private var reiterLeiste: some View {
+    private var tabBar: some View {
         HStack(spacing: 0) {
-            ForEach(0..<reiterNamen.count, id: \.self) { i in
-                let an: Bool = reiter == i
+            ForEach(0..<tabNames.count, id: \.self) { i in
+                let on: Bool = tab == i
                 Button {
-                    Spuerbar.tipp()
-                    reiter = i
+                    Haptics.tap()
+                    tab = i
                 } label: {
                     VStack(spacing: 0) {
-                        Text(reiterNamen[i])
-                            .font(.marke(13, .semibold))
-                            .foregroundColor(an ? Farbe.schrift : Farbe.leise)
+                        Text(tabNames[i])
+                            .font(.brand(13, .semibold))
+                            .foregroundColor(on ? Palette.foreground : Palette.faint)
                             .frame(maxWidth: .infinity)
                             .frame(height: 42)
                         Rectangle()
-                            .fill(an ? Farbe.akzent : Color.clear)
+                            .fill(on ? Palette.accent : Color.clear)
                             .frame(height: 2)
                     }
-                    .background(an ? Farbe.akzent.opacity(0.12) : Color.clear)
+                    .background(on ? Palette.accent.opacity(0.12) : Color.clear)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .background(Farbe.flaeche)
+        .background(Palette.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Farbe.linie, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Palette.border, lineWidth: 1))
         .padding(.horizontal, 16)
         .padding(.bottom, 4)
     }
 
     @MainActor
-    private func laden() async {
-        laedt = true
-        fehler = nil
+    private func load() async {
+        loading = true
+        errorMessage = nil
         do {
-            let s: QuestStand = try await api.holen("/quests")
-            stand = s
+            let s: QuestOverview = try await api.fetch("/quests")
+            tally = s
         } catch {
-            fehler = error.localizedDescription
+            errorMessage = error.localizedDescription
         }
-        laedt = false
+        loading = false
     }
 
     @MainActor
-    private func abholen(_ q: QuestEintrag) async {
-        guard holt == nil else { return }
-        holt = q.id
-        defer { holt = nil }
+    private func claim(_ q: QuestItem) async {
+        guard claiming == nil else { return }
+        claiming = q.id
+        defer { claiming = nil }
         do {
-            let a: Abholung = try await api.senden("/quests/claim", ["questId": q.id])
-            if let n = a.newSpots { api.spotsSetzen(n) }
-            Spuerbar.richtig()
-            meldung = "+\(a.reward) Spots"
-            await laden()
+            let a: ClaimResult = try await api.transmit("/quests/claim", ["questId": q.id])
+            if let n = a.newSpots { api.setSpots(n) }
+            Haptics.correct()
+            notice = "+\(a.reward) Spots"
+            await load()
         } catch {
-            Spuerbar.falsch()
-            meldung = error.localizedDescription
+            Haptics.wrong()
+            notice = error.localizedDescription
         }
     }
 }
 
-private struct QuestKarte: View {
-    let quest: QuestEintrag
-    let holtGerade: Bool
-    let abholen: () -> Void
+private struct QuestCard: View {
+    let quest: QuestItem
+    let isClaiming: Bool
+    let claim: () -> Void
 
     var body: some View {
-        let offen: Bool = quest.fertig && !quest.abgeholt
-        let form = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        let isOpen: Bool = quest.finished && !quest.isClaimed
+        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
         VStack(spacing: 10) {
             HStack(spacing: 12) {
-                Image(systemName: quest.abgeholt ? "checkmark" : "target")
+                Image(systemName: quest.isClaimed ? "checkmark" : "target")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(Farbe.akzent)
+                    .foregroundColor(Palette.accent)
                     .frame(width: 40, height: 40)
-                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Farbe.akzent.opacity(0.16)))
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Farbe.akzent.opacity(0.3), lineWidth: 1))
+                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Palette.accent.opacity(0.16)))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Palette.accent.opacity(0.3), lineWidth: 1))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(name)
-                        .font(.marke(14, .heavy))
-                        .foregroundColor(Farbe.schrift)
+                        .font(.brand(14, .heavy))
+                        .foregroundColor(Palette.foreground)
                         .lineLimit(2)
-                    Text("\(quest.stand) / \(quest.ziel)")
-                        .font(.marke(11))
-                        .foregroundColor(Farbe.leise)
+                    Text("\(quest.tally) / \(quest.goal)")
+                        .font(.brand(11))
+                        .foregroundColor(Palette.faint)
                 }
                 Spacer(minLength: 0)
-                rechts
+                rightSide
             }
             HStack(spacing: 8) {
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.white.opacity(0.06))
-                        Capsule().fill(Farbe.verlauf)
-                            .frame(width: geo.size.width * CGFloat(quest.anteil))
+                        Capsule().fill(Palette.gradient)
+                            .frame(width: geo.size.width * CGFloat(quest.fraction))
                     }
                 }
                 .frame(height: 8)
-                Text("\(Int((quest.anteil * 100).rounded()))%")
+                Text("\(Int((quest.fraction * 100).rounded()))%")
                     .font(.mono(10))
-                    .foregroundColor(quest.stand > 0 ? Farbe.akzent : Farbe.leise)
+                    .foregroundColor(quest.tally > 0 ? Palette.accent : Palette.faint)
                     .frame(minWidth: 32, alignment: .trailing)
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 13)
-        .background(form.fill(offen ? Color(hex: 0x140E32) : Farbe.flaeche))
-        .overlay(form.strokeBorder(offen ? Farbe.akzent.opacity(0.4) : Farbe.linie, lineWidth: 1))
-        .opacity(quest.abgeholt ? 0.65 : 1)
+        .background(shape.fill(isOpen ? Color(hex: 0x140E32) : Palette.surface))
+        .overlay(shape.strokeBorder(isOpen ? Palette.accent.opacity(0.4) : Palette.border, lineWidth: 1))
+        .opacity(quest.isClaimed ? 0.65 : 1)
     }
 
     private var name: String {
-        if let n = QuestEintrag.namen.first(where: { $0.id == quest.id }) { return n.en }
+        if let n = QuestItem.names.first(where: { $0.id == quest.id }) { return n.en }
         return quest.id
     }
 
     @ViewBuilder
-    private var rechts: some View {
-        if quest.abgeholt {
+    private var rightSide: some View {
+        if quest.isClaimed {
             Text("Claimed")
-                .font(.marke(10, .bold))
-                .foregroundColor(Farbe.akzent)
+                .font(.brand(10, .bold))
+                .foregroundColor(Palette.accent)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Capsule().fill(Farbe.akzent.opacity(0.15)))
-        } else if quest.fertig {
-            Button(action: abholen) {
+                .background(Capsule().fill(Palette.accent.opacity(0.15)))
+        } else if quest.finished {
+            Button(action: claim) {
                 HStack(spacing: 3) {
-                    Text("+\(quest.belohnung)").font(.marke(12, .bold))
+                    Text("+\(quest.prize)").font(.brand(12, .bold))
                     Image(systemName: "music.note").font(.system(size: 10, weight: .bold))
                 }
-                .foregroundColor(Farbe.aufAkzent)
+                .foregroundColor(Palette.onAccent)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Capsule().fill(Farbe.verlauf))
-                .opacity(holtGerade ? 0.6 : 1)
+                .background(Capsule().fill(Palette.gradient))
+                .opacity(isClaiming ? 0.6 : 1)
             }
-            .buttonStyle(BubbleDruck())
-            .disabled(holtGerade)
+            .buttonStyle(BubblePressStyle())
+            .disabled(isClaiming)
         } else {
             HStack(spacing: 3) {
-                Text("+\(quest.belohnung)").font(.marke(12, .bold))
+                Text("+\(quest.prize)").font(.brand(12, .bold))
                 Image(systemName: "music.note").font(.system(size: 10, weight: .bold))
             }
             .foregroundColor(Color(hex: 0xF59E0B))
@@ -256,96 +256,96 @@ private struct QuestKarte: View {
 // MARK: - Taegliche Belohnung
 
 /// Erscheint beim Oeffnen, wenn es heute etwas abzuholen gibt - wie im Browser.
-struct TagesBonusBlatt: View {
+struct DailyBonusSheet: View {
     @EnvironmentObject private var api: Api
-    @Environment(\.dismiss) private var schliessen
+    @Environment(\.dismiss) private var close
 
-    let bonus: TagesBonus
-    @State private var holt = false
-    @State private var ergebnis: TagesBonusAntwort?
-    @State private var fehler: String?
+    let bonus: DailyBonus
+    @State private var claiming = false
+    @State private var outcome: DailyBonusClaim?
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 18) {
-            Text("DAILY REWARD").etikett()
-            Text("Day \(ergebnis?.serie ?? bonus.tag)")
-                .font(.marke(34, .heavy))
-                .foregroundStyle(Farbe.verlaufHeld)
+            Text("DAILY REWARD").eyebrow()
+            Text("Day \(outcome?.streakDay ?? bonus.dayNumber)")
+                .font(.brand(34, .heavy))
+                .foregroundStyle(Palette.gradientHero)
             HStack(spacing: 10) {
-                Lohn(symbol: "music.note", wert: ergebnis?.spots ?? bonus.spots, einheit: "SPOTS", farbe: Farbe.gut)
-                if (ergebnis?.xp ?? bonus.xp) > 0 {
-                    Lohn(symbol: "star.fill", wert: ergebnis?.xp ?? bonus.xp, einheit: "XP", farbe: Farbe.akzent)
+                RewardTile(symbol: "music.note", amount: outcome?.spots ?? bonus.spots, unit: "SPOTS", hue: Palette.good)
+                if (outcome?.xp ?? bonus.xp) > 0 {
+                    RewardTile(symbol: "star.fill", amount: outcome?.xp ?? bonus.xp, unit: "XP", hue: Palette.accent)
                 }
-                if (ergebnis?.gold ?? bonus.gold) > 0 {
-                    Lohn(symbol: "trophy.fill", wert: ergebnis?.gold ?? bonus.gold, einheit: "GS", farbe: Farbe.gold)
+                if (outcome?.gold ?? bonus.gold) > 0 {
+                    RewardTile(symbol: "trophy.fill", amount: outcome?.gold ?? bonus.gold, unit: "GS", hue: Palette.gold)
                 }
             }
             Text("Miss a day and the streak starts over at day 1.")
-                .font(.marke(12))
-                .foregroundColor(Farbe.leise)
+                .font(.brand(12))
+                .foregroundColor(Palette.faint)
                 .multilineTextAlignment(.center)
-            if let f = fehler {
-                Text(f).font(.marke(12, .semibold)).foregroundColor(Farbe.schlecht)
+            if let f = errorMessage {
+                Text(f).font(.brand(12, .semibold)).foregroundColor(Palette.bad)
             }
-            if ergebnis == nil {
+            if outcome == nil {
                 Button {
-                    Task { await abholen() }
+                    Task { await claim() }
                 } label: {
-                    Text(holt ? "…" : "Collect")
+                    Text(claiming ? "…" : "Collect")
                 }
-                .buttonStyle(Hauptknopf(aus: holt))
-                .disabled(holt)
+                .buttonStyle(PrimaryButtonStyle(dimmed: claiming))
+                .disabled(claiming)
             } else {
-                Button("Done") { schliessen() }
-                    .buttonStyle(Hauptknopf(farbe: Farbe.kante))
+                Button("Done") { close() }
+                    .buttonStyle(PrimaryButtonStyle(hue: Palette.rim))
             }
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .background(Farbe.grund.ignoresSafeArea())
+        .background(Palette.base.ignoresSafeArea())
         .presentationDetents([.medium])
     }
 
     @MainActor
-    private func abholen() async {
-        holt = true
-        defer { holt = false }
+    private func claim() async {
+        claiming = true
+        defer { claiming = false }
         do {
-            let a: TagesBonusAntwort = try await api.senden("/daily-checkin")
-            if a.abgeholt {
-                ergebnis = a
-                Spuerbar.richtig()
-                await api.profilAuffrischen()
+            let a: DailyBonusClaim = try await api.transmit("/daily-checkin")
+            if a.isClaimed {
+                outcome = a
+                Haptics.correct()
+                await api.refreshProfile()
             } else {
-                fehler = "Already collected today."
+                errorMessage = "Already collected today."
             }
         } catch {
-            fehler = error.localizedDescription
+            errorMessage = error.localizedDescription
         }
     }
 }
 
-private struct Lohn: View {
+private struct RewardTile: View {
     let symbol: String
-    let wert: Int
-    let einheit: String
-    let farbe: Color
+    let amount: Int
+    let unit: String
+    let hue: Color
 
     var body: some View {
         VStack(spacing: 6) {
             Image(systemName: symbol)
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(farbe)
-            Text("+\(wert)")
+                .foregroundColor(hue)
+            Text("+\(amount)")
                 .font(.mono(16))
-                .foregroundColor(Farbe.schrift)
-            Text(einheit)
-                .font(.marke(9, .black))
+                .foregroundColor(Palette.foreground)
+            Text(unit)
+                .font(.brand(9, .black))
                 .tracking(1)
-                .foregroundColor(Farbe.leise)
+                .foregroundColor(Palette.faint)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(Glas(radius: 14))
+        .background(GlassPanel(radius: 14))
     }
 }

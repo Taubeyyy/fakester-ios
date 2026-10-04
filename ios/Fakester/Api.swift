@@ -9,48 +9,48 @@ import Foundation
 final class Api: ObservableObject {
     static let shared = Api()
 
-    static let basis = URL(string: "https://fakester.app/fakester")!
+    static let baseURL = URL(string: "https://fakester.app/fakester")!
 
     /// Token und Spielername ueberleben den Appstart. Mehr wird nicht
     /// gespeichert - alles andere holt das Profil frisch, sonst zeigt die App
     /// Spots und Rang von vorgestern.
     @Published private(set) var token: String?
-    @Published private(set) var ich: Konto?
+    @Published private(set) var me: Account?
     /// Gaeste haben kein Konto. Der Ausweis wird einmal gebaut und behalten,
     /// damit ein Neustart in derselben Lobby nicht als zweiter Spieler landet.
-    @Published private(set) var gast: SpielerAusweis?
+    @Published private(set) var guest: PlayerIdentity?
 
-    private let ablage = UserDefaults.standard
+    private let store = UserDefaults.standard
 
     private init() {
-        token = ablage.string(forKey: "api.token")
-        if let d = ablage.data(forKey: "api.ich") {
-            ich = try? JSONDecoder().decode(Konto.self, from: d)
+        token = store.string(forKey: "api.token")
+        if let d = store.data(forKey: "api.ich") {
+            me = try? JSONDecoder().decode(Account.self, from: d)
         }
-        if let id = ablage.string(forKey: "gast.id"), let name = ablage.string(forKey: "gast.name") {
-            gast = SpielerAusweis(id: id, username: name, isGuest: true)
+        if let id = store.string(forKey: "gast.id"), let name = store.string(forKey: "gast.name") {
+            guest = PlayerIdentity(id: id, username: name, isGuest: true)
         }
     }
 
-    var angemeldet: Bool { token != nil && ich != nil }
+    var isLoggedIn: Bool { token != nil && me != nil }
 
     /// Wer sitzt am Tisch - Konto oder Gast. Genau das verlangen `create-game`
     /// und `join-game`.
-    var ausweis: SpielerAusweis? {
-        if let k = ich {
-            return SpielerAusweis(id: String(k.id.text), username: k.username, isGuest: false,
+    var identity: PlayerIdentity? {
+        if let k = me {
+            return PlayerIdentity(id: String(k.id.text), username: k.username, isGuest: false,
                                   is_pro: k.is_pro, is_admin: k.is_admin,
                                   equipped_icon_id: k.equipped_icon_id ?? 1,
                                   equipped_title_id: k.equipped_title_id ?? 1,
                                   avatar_url: k.avatar_url, equipped_emoji: k.equipped_emoji)
         }
-        return gast
+        return guest
     }
 
     // MARK: - Konto
 
-    struct Konto: Codable {
-        let id: Lose
+    struct Account: Codable {
+        let id: LooseValue
         let username: String
         var xp: Int?
         var spots: Int?
@@ -72,7 +72,7 @@ final class Api: ObservableObject {
         }
         init(from d: Decoder) throws {
             let c = try d.container(keyedBy: CodingKeys.self)
-            id = try c.decode(Lose.self, forKey: .id)
+            id = try c.decode(LooseValue.self, forKey: .id)
             username = (try? c.decode(String.self, forKey: .username)) ?? "?"
             xp = try? c.decode(Int.self, forKey: .xp)
             spots = try? c.decode(Int.self, forKey: .spots)
@@ -90,101 +90,101 @@ final class Api: ObservableObject {
     }
 
     /// Die Form, in der der Server eine Absage begruendet.
-    private struct Absage: Decodable { let error: String? }
+    private struct ErrorReply: Decodable { let error: String? }
 
     /// Stufe und Fortschritt, genau wie der Server rechnet:
     /// `levelForXp(xp) = max(1, floor((25 + sqrt(625 + 100*xp)) / 50))`.
     /// Nachgebaut statt geschaetzt - eine Stufe, die in der App anders steht
     /// als im Browser, ist schlimmer als gar keine.
-    enum Stufe {
-        static func fuerXp(_ xp: Int) -> Int {
+    enum Level {
+        static func forXP(_ xp: Int) -> Int {
             max(1, Int((25.0 + (625.0 + 100.0 * Double(max(0, xp))).squareRoot()) / 50.0))
         }
 
         /// Ab wie viel XP diese Stufe beginnt - die Umkehrung der Formel oben.
-        static func xpAb(_ stufe: Int) -> Int {
-            let g = 50.0 * Double(stufe) - 25.0
+        static func minXP(_ level: Int) -> Int {
+            let g = 50.0 * Double(level) - 25.0
             return max(0, Int((g * g - 625.0) / 100.0))
         }
 
         /// Anteil 0…1 innerhalb der laufenden Stufe.
-        static func anteil(xp: Int) -> Double {
-            let l = fuerXp(xp)
-            let von = xpAb(l), bis = xpAb(l + 1)
-            guard bis > von else { return 0 }
-            return min(1, max(0, Double(xp - von) / Double(bis - von)))
+        static func fraction(xp: Int) -> Double {
+            let l = forXP(xp)
+            let lowerXP = minXP(l), upperXP = minXP(l + 1)
+            guard upperXP > lowerXP else { return 0 }
+            return min(1, max(0, Double(xp - lowerXP) / Double(upperXP - lowerXP)))
         }
     }
 
-    enum Fehler: LocalizedError {
-        case meldung(String)
+    enum RequestError: LocalizedError {
+        case notice(String)
         var errorDescription: String? {
-            if case .meldung(let m) = self { return m }
+            if case .notice(let m) = self { return m }
             return nil
         }
     }
 
     // MARK: - Anmelden
 
-    private struct AnmeldeAntwort: Decodable {
+    private struct LoginResponse: Decodable {
         let token: String?
-        let user: Konto?
+        let user: Account?
     }
 
-    func anmelden(name: String, passwort: String) async throws {
-        try await anmeldung("/auth/login", name: name, passwort: passwort)
+    func logIn(name: String, passwordText: String) async throws {
+        try await authenticate("/auth/login", name: name, passwordText: passwordText)
     }
 
-    func registrieren(name: String, passwort: String) async throws {
-        try await anmeldung("/auth/register", name: name, passwort: passwort)
+    func register(name: String, passwordText: String) async throws {
+        try await authenticate("/auth/register", name: name, passwordText: passwordText)
     }
 
-    private func anmeldung(_ pfad: String, name: String, passwort: String) async throws {
-        let antwort: AnmeldeAntwort = try await ruf(
-            pfad, methode: "POST",
-            koerper: ["username": name.trimmingCharacters(in: .whitespaces), "password": passwort],
-            mitToken: false)
-        guard let t = antwort.token, let u = antwort.user else {
-            throw Fehler.meldung("The server didn't send back a login.")
+    private func authenticate(_ path: String, name: String, passwordText: String) async throws {
+        let answer: LoginResponse = try await perform(
+            path, method: "POST",
+            jsonBody: ["username": name.trimmingCharacters(in: .whitespaces), "password": passwordText],
+            withToken: false)
+        guard let t = answer.token, let u = answer.user else {
+            throw RequestError.notice("The server didn't send back a login.")
         }
         token = t
-        ich = u
-        ablage.set(t, forKey: "api.token")
-        ablage.set(try? JSONEncoder().encode(u), forKey: "api.ich")
+        me = u
+        store.set(t, forKey: "api.token")
+        store.set(try? JSONEncoder().encode(u), forKey: "api.ich")
     }
 
     /// Raeumt beides ab - Konto UND Gast. Ohne das Zweite stuende ein Gast nach
     /// dem Abmelden sofort wieder mit demselben Namen da, weil der Ausweis die
     /// Anmeldung gar nicht braucht.
-    func abmelden() {
+    func logOut() {
         token = nil
-        ich = nil
-        gast = nil
-        ablage.removeObject(forKey: "api.token")
-        ablage.removeObject(forKey: "api.ich")
-        ablage.removeObject(forKey: "gast.id")
-        ablage.removeObject(forKey: "gast.name")
+        me = nil
+        guest = nil
+        store.removeObject(forKey: "api.token")
+        store.removeObject(forKey: "api.ich")
+        store.removeObject(forKey: "gast.id")
+        store.removeObject(forKey: "gast.name")
     }
 
     /// Gast bleibt Gast, bis er einen anderen Namen waehlt.
-    func alsGast(name: String) {
-        let sauber = name.trimmingCharacters(in: .whitespaces)
-        if let g = gast, g.username == sauber { return }
-        let neu = SpielerAusweis.gast(name: sauber)
-        gast = neu
-        ablage.set(neu.id, forKey: "gast.id")
-        ablage.set(neu.username, forKey: "gast.name")
+    func playAsGuest(name: String) {
+        let cleaned = name.trimmingCharacters(in: .whitespaces)
+        if let g = guest, g.username == cleaned { return }
+        let latest = PlayerIdentity.guest(name: cleaned)
+        guest = latest
+        store.set(latest.id, forKey: "gast.id")
+        store.set(latest.username, forKey: "gast.name")
     }
 
     // MARK: - Profil
 
-    func profilAuffrischen() async {
+    func refreshProfile() async {
         guard token != nil else { return }
-        struct Profil: Decodable { let user: Konto? }
-        if let p: Profil = try? await ruf("/profile", methode: "GET", koerper: nil, mitToken: true),
+        struct ProfileResponse: Decodable { let user: Account? }
+        if let p: ProfileResponse = try? await perform("/profile", method: "GET", jsonBody: nil, withToken: true),
            let u = p.user {
-            ich = u
-            ablage.set(try? JSONEncoder().encode(u), forKey: "api.ich")
+            me = u
+            store.set(try? JSONEncoder().encode(u), forKey: "api.ich")
         }
     }
 
@@ -192,72 +192,72 @@ final class Api: ObservableObject {
 
     /// GET mit Abfrage, z. B. `/leaderboard?sort=xp`. Das Token geht mit, wenn
     /// es eins gibt - die Endpunkte hier gehen aber auch fuer Gaeste.
-    func holen<T: Decodable>(_ pfad: String, _ abfrage: [String: String] = [:]) async throws -> T {
-        try await ruf(pfad, methode: "GET", koerper: nil, mitToken: token != nil, abfrage: abfrage)
+    func fetch<T: Decodable>(_ path: String, _ query: [String: String] = [:]) async throws -> T {
+        try await perform(path, method: "GET", jsonBody: nil, withToken: token != nil, query: query)
     }
 
     /// POST mit Konto (Quests abholen, taegliche Belohnung).
-    func senden<T: Decodable>(_ pfad: String, _ koerper: [String: String] = [:]) async throws -> T {
-        try await ruf(pfad, methode: "POST", koerper: koerper, mitToken: true)
+    func transmit<T: Decodable>(_ path: String, _ jsonBody: [String: String] = [:]) async throws -> T {
+        try await perform(path, method: "POST", jsonBody: jsonBody, withToken: true)
     }
 
     /// Nach dem Abholen schickt der Server den neuen Spots-Stand mit - der soll
     /// sofort oben rechts stehen, nicht erst nach dem naechsten Profilabruf.
-    func spotsSetzen(_ neu: Int) {
-        guard var k = ich else { return }
-        k.spots = neu
-        ich = k
-        ablage.set(try? JSONEncoder().encode(k), forKey: "api.ich")
+    func setSpots(_ latest: Int) {
+        guard var k = me else { return }
+        k.spots = latest
+        me = k
+        store.set(try? JSONEncoder().encode(k), forKey: "api.ich")
     }
 
     // MARK: - Unterbau
 
-    private func ruf<T: Decodable>(_ pfad: String, methode: String,
-                                   koerper: [String: String]?, mitToken: Bool,
-                                   abfrage: [String: String] = [:]) async throws -> T {
-        var adresse: URL = Api.basis.appendingPathComponent(pfad.hasPrefix("/") ? String(pfad.dropFirst()) : pfad)
-        if !abfrage.isEmpty, var teile = URLComponents(url: adresse, resolvingAgainstBaseURL: false) {
+    private func perform<T: Decodable>(_ path: String, method: String,
+                                   jsonBody: [String: String]?, withToken: Bool,
+                                   query: [String: String] = [:]) async throws -> T {
+        var address: URL = Api.baseURL.appendingPathComponent(path.hasPrefix("/") ? String(path.dropFirst()) : path)
+        if !query.isEmpty, var components = URLComponents(url: address, resolvingAgainstBaseURL: false) {
             // Selbst kodiert: URLComponents laesst & und = in Werten stehen, und
             // ein Spotify-Link mit "?si=…" zerfiele dann in zwei Parameter.
-            var erlaubt = CharacterSet.alphanumerics
-            erlaubt.insert(charactersIn: "-._~")
-            let paare: [String] = abfrage.keys.sorted().map { k in
-                let v: String = abfrage[k] ?? ""
-                return k + "=" + (v.addingPercentEncoding(withAllowedCharacters: erlaubt) ?? v)
+            var allowed = CharacterSet.alphanumerics
+            allowed.insert(charactersIn: "-._~")
+            let pairs: [String] = query.keys.sorted().map { k in
+                let v: String = query[k] ?? ""
+                return k + "=" + (v.addingPercentEncoding(withAllowedCharacters: allowed) ?? v)
             }
-            teile.percentEncodedQuery = paare.joined(separator: "&")
-            if let u = teile.url { adresse = u }
+            components.percentEncodedQuery = pairs.joined(separator: "&")
+            if let u = components.url { address = u }
         }
-        var anfrage = URLRequest(url: adresse)
-        anfrage.httpMethod = methode
-        anfrage.timeoutInterval = 20
-        anfrage.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if mitToken, let t = token {
-            anfrage.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization")
+        var request = URLRequest(url: address)
+        request.httpMethod = method
+        request.timeoutInterval = 20
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if withToken, let t = token {
+            request.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization")
         }
-        if let k = koerper {
-            anfrage.httpBody = try JSONSerialization.data(withJSONObject: k)
+        if let k = jsonBody {
+            request.httpBody = try JSONSerialization.data(withJSONObject: k)
         }
 
-        let (daten, antwort): (Data, URLResponse)
+        let (bytes, answer): (Data, URLResponse)
         do {
-            (daten, antwort) = try await URLSession.shared.data(for: anfrage)
+            (bytes, answer) = try await URLSession.shared.data(for: request)
         } catch {
-            throw Fehler.meldung("No connection to the server.")
+            throw RequestError.notice("No connection to the server.")
         }
 
-        let code = (antwort as? HTTPURLResponse)?.statusCode ?? 0
+        let code = (answer as? HTTPURLResponse)?.statusCode ?? 0
         if !(200..<300).contains(code) {
             // Der Server begruendet seine Absagen - die Begruendung ist
             // brauchbarer als ein Statuscode ("Wrong login details", der
             // Bann-Text mitsamt Restzeit).
-            let grund = (try? JSONDecoder().decode(Absage.self, from: daten))?.error
-            throw Fehler.meldung(grund ?? "The server refused (\(code)).")
+            let base = (try? JSONDecoder().decode(ErrorReply.self, from: bytes))?.error
+            throw RequestError.notice(base ?? "The server refused (\(code)).")
         }
         do {
-            return try JSONDecoder().decode(T.self, from: daten)
+            return try JSONDecoder().decode(T.self, from: bytes)
         } catch {
-            throw Fehler.meldung("Couldn't read the server's response.")
+            throw RequestError.notice("Couldn't read the server's response.")
         }
     }
 }

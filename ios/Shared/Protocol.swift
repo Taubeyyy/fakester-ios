@@ -9,19 +9,19 @@ import Foundation
 
 // MARK: - Umschlag
 
-struct Umschlag<Nutzlast: Decodable>: Decodable {
+struct Envelope<Payload: Decodable>: Decodable {
     let type: String
-    let payload: Nutzlast?
+    let payload: Payload?
 }
 
 /// Liest nur den Typ. Die Nutzlast wird erst danach in die passende Form
 /// dekodiert - zweimal durch dieselben Bytes, aber dafuer typsicher und ohne
 /// eine Allerwelts-JSON-Darstellung durch die ganze App zu schleifen.
-struct NurTyp: Decodable { let type: String }
+struct TypeOnly: Decodable { let type: String }
 
 // MARK: - Bausteine
 
-struct Bewertung: Decodable, Hashable {
+struct ScoreItem: Decodable, Hashable {
     let points: Int
     let text: String
 }
@@ -34,24 +34,24 @@ struct Bewertung: Decodable, Hashable {
 /// hat die Huelle gezeigt. Ohne sie waere die Aufstellung nach jeder Runde
 /// stumm leer geblieben, weil `total` als Zahl das Dekodieren hat scheitern
 /// lassen.
-struct Punkteblatt: Decodable, Hashable {
+struct PointsBreakdown: Decodable, Hashable {
     let total: Int
-    let breakdown: [String: Bewertung]
+    let breakdown: [String: ScoreItem]
     /// Was man selbst geantwortet hat. Beim Quiz Text, bei Timeline eine
     /// Position als Zahl - deshalb `Lose`.
-    let ownAnswer: [String: Lose]?
+    let ownAnswer: [String: LooseValue]?
 
     private enum CodingKeys: String, CodingKey { case total, breakdown, ownAnswer }
     init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
         total = (try? c.decode(Int.self, forKey: .total)) ?? 0
-        breakdown = (try? c.decode([String: Bewertung].self, forKey: .breakdown)) ?? [:]
-        ownAnswer = try? c.decode([String: Lose].self, forKey: .ownAnswer)
+        breakdown = (try? c.decode([String: ScoreItem].self, forKey: .breakdown)) ?? [:]
+        ownAnswer = try? c.decode([String: LooseValue].self, forKey: .ownAnswer)
     }
 }
 
-struct Spieler: Decodable, Identifiable, Hashable {
-    let id: Lose
+struct Player: Decodable, Identifiable, Hashable {
+    let id: LooseValue
     let nickname: String
     let score: Int
     let lives: Int?
@@ -69,9 +69,9 @@ struct Spieler: Decodable, Identifiable, Hashable {
     let titleId: Int
     let avatarUrl: String?
     let emoji: String?
-    let lastPointsBreakdown: Punkteblatt?
+    let lastPointsBreakdown: PointsBreakdown?
     /// Nur im Endstand gefuellt.
-    let rewards: Belohnung?
+    let rewards: Reward?
 
     private enum CodingKeys: String, CodingKey {
         case id, nickname, score, lives, isEliminated, isConnected, isReady
@@ -81,7 +81,7 @@ struct Spieler: Decodable, Identifiable, Hashable {
 
     init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
-        id = try c.decode(Lose.self, forKey: .id)
+        id = try c.decode(LooseValue.self, forKey: .id)
         nickname = (try? c.decode(String.self, forKey: .nickname)) ?? "?"
         score = (try? c.decode(Int.self, forKey: .score)) ?? 0
         lives = try? c.decode(Int.self, forKey: .lives)
@@ -99,12 +99,12 @@ struct Spieler: Decodable, Identifiable, Hashable {
         titleId = (try? c.decode(Int.self, forKey: .titleId)) ?? 1
         avatarUrl = try? c.decode(String.self, forKey: .avatarUrl)
         emoji = try? c.decode(String.self, forKey: .emoji)
-        lastPointsBreakdown = try? c.decode(Punkteblatt.self, forKey: .lastPointsBreakdown)
-        rewards = try? c.decode(Belohnung.self, forKey: .rewards)
+        lastPointsBreakdown = try? c.decode(PointsBreakdown.self, forKey: .lastPointsBreakdown)
+        rewards = try? c.decode(Reward.self, forKey: .rewards)
     }
 }
 
-struct Belohnung: Decodable, Hashable {
+struct Reward: Decodable, Hashable {
     let xp: Int
     let spots: Int
     let goldSpots: Int
@@ -118,7 +118,7 @@ struct Belohnung: Decodable, Hashable {
     }
 }
 
-struct Einstellungen: Decodable, Hashable {
+struct LobbySettings: Decodable, Hashable {
     let songCount: Int
     let guessTime: Int
     let revealTime: Int
@@ -132,7 +132,7 @@ struct Einstellungen: Decodable, Hashable {
     let sneakyMode: Bool
 
     /// Multiple Choice? Alles andere ist Freitext.
-    var istMC: Bool { answerType == "multiple" }
+    var isMultipleChoice: Bool { answerType == "multiple" }
 
     private enum CodingKeys: String, CodingKey {
         case songCount, guessTime, revealTime, answerType, guessTypes
@@ -155,7 +155,7 @@ struct Einstellungen: Decodable, Hashable {
     }
 }
 
-struct Titel: Decodable, Hashable {
+struct Track: Decodable, Hashable {
     let title: String
     let artist: String
     let year: Int?
@@ -166,7 +166,7 @@ struct Titel: Decodable, Hashable {
         let c = try d.container(keyedBy: CodingKeys.self)
         title = (try? c.decode(String.self, forKey: .title)) ?? ""
         artist = (try? c.decode(String.self, forKey: .artist)) ?? ""
-        year = (try? c.decode(Lose.self, forKey: .year))?.zahl
+        year = (try? c.decode(LooseValue.self, forKey: .year))?.numeric
         albumArt = try? c.decode(String.self, forKey: .albumArt)
     }
 }
@@ -175,27 +175,27 @@ struct Titel: Decodable, Hashable {
 
 struct LobbyUpdate: Decodable {
     let pin: String
-    let hostId: Lose?
+    let hostId: LooseValue?
     let gameState: String             // LOBBY | LOADING | PLAYING | FINISHED
     let gameMode: String?
-    let players: [Spieler]
-    let settings: Einstellungen?
+    let players: [Player]
+    let settings: LobbySettings?
 
     private enum CodingKeys: String, CodingKey {
         case pin, hostId, gameState, gameMode, players, settings
     }
     init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
-        pin = ((try? c.decode(Lose.self, forKey: .pin)) ?? Lose("")).text
-        hostId = try? c.decode(Lose.self, forKey: .hostId)
+        pin = ((try? c.decode(LooseValue.self, forKey: .pin)) ?? LooseValue("")).text
+        hostId = try? c.decode(LooseValue.self, forKey: .hostId)
         gameState = (try? c.decode(String.self, forKey: .gameState)) ?? "LOBBY"
         gameMode = try? c.decode(String.self, forKey: .gameMode)
-        players = (try? c.decode(Durchlaessig<Spieler>.self, forKey: .players).liste) ?? []
-        settings = try? c.decode(Einstellungen.self, forKey: .settings)
+        players = (try? c.decode(LenientArray<Player>.self, forKey: .players).items) ?? []
+        settings = try? c.decode(LobbySettings.self, forKey: .settings)
     }
 }
 
-struct NeueRunde: Decodable {
+struct NewRound: Decodable {
     let round: Int
     let totalRounds: Int
     let previewUrl: String?
@@ -207,7 +207,7 @@ struct NeueRunde: Decodable {
     let startDelayMs: Int
     /// Auswahlmoeglichkeiten je Rateart. Das Jahr kommt als Zahl, Titel und
     /// Interpret als Text - im selben Objekt. Deshalb `Lose`.
-    let mcOptions: [String: [Lose]]
+    let mcOptions: [String: [LooseValue]]
 
     private enum CodingKeys: String, CodingKey {
         case round, totalRounds, previewUrl, albumArt, guessTypes, isReverse, startDelayMs, mcOptions
@@ -221,38 +221,38 @@ struct NeueRunde: Decodable {
         guessTypes = (try? c.decode([String].self, forKey: .guessTypes)) ?? []
         isReverse = (try? c.decode(Bool.self, forKey: .isReverse)) ?? false
         startDelayMs = (try? c.decode(Int.self, forKey: .startDelayMs)) ?? 0
-        mcOptions = (try? c.decode([String: [Lose]].self, forKey: .mcOptions)) ?? [:]
+        mcOptions = (try? c.decode([String: [LooseValue]].self, forKey: .mcOptions)) ?? [:]
     }
 }
 
-struct RundenErgebnis: Decodable {
-    let correctTrack: Titel?
-    let scores: [Spieler]
+struct RoundResult: Decodable {
+    let correctTrack: Track?
+    let scores: [Player]
     /// Im Sneaky Mode bleibt der Song verdeckt.
     let sneaky: Bool
 
     private enum CodingKeys: String, CodingKey { case correctTrack, scores, sneaky }
     init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
-        correctTrack = try? c.decode(Titel.self, forKey: .correctTrack)
-        scores = (try? c.decode(Durchlaessig<Spieler>.self, forKey: .scores).liste) ?? []
+        correctTrack = try? c.decode(Track.self, forKey: .correctTrack)
+        scores = (try? c.decode(LenientArray<Player>.self, forKey: .scores).items) ?? []
         sneaky = (try? c.decode(Bool.self, forKey: .sneaky)) ?? false
     }
 }
 
-struct Endstand: Decodable {
-    let scores: [Spieler]
-    let songs: [Titel]
+struct FinalStandings: Decodable {
+    let scores: [Player]
+    let songs: [Track]
 
     private enum CodingKeys: String, CodingKey { case scores, songs }
     init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
-        scores = (try? c.decode(Durchlaessig<Spieler>.self, forKey: .scores).liste) ?? []
-        songs = (try? c.decode(Durchlaessig<Titel>.self, forKey: .songs).liste) ?? []
+        scores = (try? c.decode(LenientArray<Player>.self, forKey: .scores).items) ?? []
+        songs = (try? c.decode(LenientArray<Track>.self, forKey: .songs).items) ?? []
     }
 }
 
-struct LadeStand: Decodable {
+struct LoadingProgress: Decodable {
     let checked: Int
     let total: Int
     let playable: Int
@@ -268,7 +268,7 @@ struct LadeStand: Decodable {
     }
 }
 
-struct Hinweis: Decodable {
+struct ToastMessage: Decodable {
     let message: String
     let isError: Bool
     private enum CodingKeys: String, CodingKey { case message, isError }
@@ -279,7 +279,7 @@ struct Hinweis: Decodable {
     }
 }
 
-struct Rauswurf: Decodable {
+struct KickNotice: Decodable {
     let reason: String?
     let banned: Bool
     let minutesLeft: Int?
@@ -292,7 +292,7 @@ struct Rauswurf: Decodable {
     }
 }
 
-struct ChatZeile: Decodable, Identifiable, Hashable {
+struct ChatLine: Decodable, Identifiable, Hashable {
     let id = UUID()
     let nickname: String
     let text: String
@@ -307,12 +307,12 @@ struct ChatZeile: Decodable, Identifiable, Hashable {
     }
 }
 
-struct Zustandsabgleich: Decodable {
+struct StateSync: Decodable {
     let gameState: String
     let gameMode: String?
     let round: Int
     let totalRounds: Int
-    let scores: [Spieler]
+    let scores: [Player]
 
     private enum CodingKeys: String, CodingKey { case gameState, gameMode, round, totalRounds, scores }
     init(from d: Decoder) throws {
@@ -321,13 +321,13 @@ struct Zustandsabgleich: Decodable {
         gameMode = try? c.decode(String.self, forKey: .gameMode)
         round = (try? c.decode(Int.self, forKey: .round)) ?? 0
         totalRounds = (try? c.decode(Int.self, forKey: .totalRounds)) ?? 0
-        scores = (try? c.decode(Durchlaessig<Spieler>.self, forKey: .scores).liste) ?? []
+        scores = (try? c.decode(LenientArray<Player>.self, forKey: .scores).items) ?? []
     }
 }
 
-struct Zaehler: Decodable { let number: Int }
+struct CountdownTick: Decodable { let number: Int }
 
-struct Startmeldung: Decodable {
+struct StartMessage: Decodable {
     let message: String?
     private enum CodingKeys: String, CodingKey { case message }
     init(from d: Decoder) throws {
@@ -340,15 +340,15 @@ struct Startmeldung: Decodable {
 
 /// Die Antwort einer Quiz-Runde. Der Server erwartet durchweg Text, auch beim
 /// Jahr - er liest es mit `parseInt`.
-struct Antwort: Encodable, Equatable {
+struct Answer: Encodable, Equatable {
     var title: String = ""
     var artist: String = ""
     var year: String = ""
 
     /// Steht zu jeder verlangten Rateart etwas da?
-    func vollstaendig(fuer arten: [String]) -> Bool {
-        arten.allSatisfy { art in
-            switch art {
+    func isComplete(covering kinds: [String]) -> Bool {
+        kinds.allSatisfy { kind in
+            switch kind {
             case "title":  return !title.trimmingCharacters(in: .whitespaces).isEmpty
             case "artist": return !artist.trimmingCharacters(in: .whitespaces).isEmpty
             case "year":   return !year.trimmingCharacters(in: .whitespaces).isEmpty
@@ -357,9 +357,9 @@ struct Antwort: Encodable, Equatable {
         }
     }
 
-    subscript(art: String) -> String {
+    subscript(kind: String) -> String {
         get {
-            switch art {
+            switch kind {
             case "title":  return title
             case "artist": return artist
             case "year":   return year
@@ -367,7 +367,7 @@ struct Antwort: Encodable, Equatable {
             }
         }
         set {
-            switch art {
+            switch kind {
             case "title":  title = newValue
             case "artist": artist = newValue
             case "year":   year = newValue
@@ -380,7 +380,7 @@ struct Antwort: Encodable, Equatable {
 /// Der Spieler, so wie ihn `create-game` und `join-game` erwarten. Der Server
 /// legt daraus den Lobby-Eintrag an; die Felder heissen dort wie in der
 /// Datenbank, daher die Unterstriche.
-struct SpielerAusweis: Encodable {
+struct PlayerIdentity: Encodable {
     let id: String
     let username: String
     let isGuest: Bool
@@ -393,9 +393,9 @@ struct SpielerAusweis: Encodable {
 
     /// Gast-IDs muessen eindeutig sein und duerfen mit keiner Konto-ID
     /// kollidieren - der Browser-Client baut sie nach demselben Muster.
-    static func gast(name: String) -> SpielerAusweis {
-        let zufall = String(UUID().uuidString.prefix(8)).lowercased()
-        return SpielerAusweis(id: "guest-\(Int(Date().timeIntervalSince1970 * 1000))-\(zufall)",
+    static func guest(name: String) -> PlayerIdentity {
+        let randomSuffix = String(UUID().uuidString.prefix(8)).lowercased()
+        return PlayerIdentity(id: "guest-\(Int(Date().timeIntervalSince1970 * 1000))-\(randomSuffix)",
                               username: name, isGuest: true)
     }
 }

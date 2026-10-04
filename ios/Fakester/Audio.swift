@@ -11,21 +11,21 @@ import Combine
 /// und weil sie damit etwas Nuetzliches tut: sie beweist, dass Ton kommt. Ohne
 /// diesen Beweis sitzt jemand mit stummgeschaltetem Geraet vor einer Runde und
 /// haelt das Spiel fuer kaputt.
-final class Ton: ObservableObject {
-    static let gemeinsam = Ton()
+final class AudioPlayer: ObservableObject {
+    static let instance = AudioPlayer()
 
-    @Published private(set) var laeuft = false
-    @Published private(set) var stelle: Double = 0
-    @Published private(set) var dauer: Double = 0
+    @Published private(set) var isRunning = false
+    @Published private(set) var elapsed: Double = 0
+    @Published private(set) var length: Double = 0
 
-    var anteil: Double {
-        guard dauer > 0, dauer.isFinite else { return 0 }
-        return min(1, max(0, stelle / dauer))
+    var fraction: Double {
+        guard length > 0, length.isFinite else { return 0 }
+        return min(1, max(0, elapsed / length))
     }
 
-    private var spieler: AVPlayer?
-    private var zuletzt: String?
-    private var beobachter: Any?
+    private var player: AVPlayer?
+    private var previous: String?
+    private var timeObserver: Any?
 
     private init() {
         // `.playback` ist hier richtig und nicht `.ambient`: in einem Musikspiel
@@ -37,71 +37,71 @@ final class Ton: ObservableObject {
         try? AVAudioSession.sharedInstance().setActive(true)
     }
 
-    func spielen(_ adresse: String?) {
-        guard let adresse, let url = URL(string: adresse) else { stoppen(); return }
+    func playPreview(_ address: String?) {
+        guard let address, let url = URL(string: address) else { stop(); return }
         // Dieselbe Runde noch einmal gemeldet (Wiederverbindung) soll den Song
         // nicht von vorn anfangen lassen - die anderen sind ja weiter.
-        if adresse == zuletzt, spieler?.timeControlStatus == .playing { return }
-        abraeumen()
-        zuletzt = adresse
+        if address == previous, player?.timeControlStatus == .playing { return }
+        cleanUp()
+        previous = address
 
         let p = AVPlayer(url: url)
         p.automaticallyWaitsToMinimizeStalling = false   // lieber sofort als sauber gepuffert
-        spieler = p
-        stelle = 0
-        dauer = 0
+        player = p
+        elapsed = 0
+        length = 0
         // Viermal die Sekunde reicht fuer einen Balken und kostet fast nichts.
-        beobachter = p.addPeriodicTimeObserver(
+        timeObserver = p.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main
         ) { [weak self] t in
             // queue: .main - laeuft also schon auf der Hauptschlange, genau da,
             // wo @Published hingehoert.
             guard let self else { return }
-            self.stelle = t.seconds
-            if let d = p.currentItem?.duration.seconds, d.isFinite, d > 0 { self.dauer = d }
-            self.laeuft = p.timeControlStatus == .playing
+            self.elapsed = t.seconds
+            if let d = p.currentItem?.duration.seconds, d.isFinite, d > 0 { self.length = d }
+            self.isRunning = p.timeControlStatus == .playing
         }
         p.play()
-        laeuft = true
+        isRunning = true
     }
 
     /// Anhalten und weiterlaufen lassen - mehr kann der Knopf im Browser auch nicht.
     /// Absichtlich kein Zurueckspulen: der Schnipsel laeuft fuer alle gleich, und
     /// wer ihn neu starten koennte, haette mehr Zeit zum Hinhoeren als die anderen.
-    func umschalten() {
-        guard let p = spieler else { return }
-        if p.timeControlStatus == .playing { p.pause(); laeuft = false }
-        else { p.play(); laeuft = true }
+    func flip() {
+        guard let p = player else { return }
+        if p.timeControlStatus == .playing { p.pause(); isRunning = false }
+        else { p.play(); isRunning = true }
     }
 
-    func stoppen() {
-        abraeumen()
-        spieler = nil
-        zuletzt = nil
-        laeuft = false
-        stelle = 0
-        dauer = 0
+    func stop() {
+        cleanUp()
+        player = nil
+        previous = nil
+        isRunning = false
+        elapsed = 0
+        length = 0
     }
 
-    private func abraeumen() {
-        if let b = beobachter { spieler?.removeTimeObserver(b); beobachter = nil }
-        spieler?.pause()
+    private func cleanUp() {
+        if let b = timeObserver { player?.removeTimeObserver(b); timeObserver = nil }
+        player?.pause()
     }
 }
 
 /// Kurze Rueckmeldung in die Hand. Auf einer Webseite gibt es das nicht, und
 /// genau solche Kleinigkeiten machen den Unterschied zwischen App und Lesezeichen.
-enum Spuerbar {
-    static func tipp() {
+enum Haptics {
+    static func tap() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
-    static func sperren() {
+    static func lock() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
-    static func richtig() {
+    static func correct() {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
-    static func falsch() {
+    static func wrong() {
         UINotificationFeedbackGenerator().notificationOccurred(.error)
     }
 }

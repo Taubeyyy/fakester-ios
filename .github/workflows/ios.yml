@@ -41,7 +41,7 @@ jobs:
       - name: Logik-Tests (Protokoll)
         run: |
           set -o pipefail
-          { swiftc -O Shared/*.swift Tests/Mitschnitt.swift Tests/main.swift -o /tmp/logic && /tmp/logic; } 2>&1 | tee "$RUNNER_TEMP/build.log"
+          { swiftc -O Shared/*.swift Tests/Capture.swift Tests/main.swift -o /tmp/logic && /tmp/logic; } 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       - name: Xcode-Projekt erzeugen
         run: xcodegen generate
@@ -102,7 +102,7 @@ jobs:
 
   # Bildschirmfotos der App aus dem iOS-Simulator - zum Nebeneinanderlegen mit
   # fakester.app. Baut Debug (dort gibt es den Vorschau-Modus aus
-  # ios/Fakester/Vorschau.swift), startet jede Szene einzeln und knipst sie.
+  # ios/Fakester/Screenshots.swift), startet jede Szene einzeln und knipst sie.
   # Nur von Hand (fotos: true), legt KEIN Release an.
   fotos:
     if: ${{ inputs.fotos }}

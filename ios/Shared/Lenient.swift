@@ -15,7 +15,7 @@ import Foundation
 /// die der Server nie zugesagt hat.
 
 /// Zahl oder Text - kommt immer als Text heraus.
-struct Lose: Codable, Hashable {
+struct LooseValue: Codable, Hashable {
     let text: String
 
     init(_ t: String) { text = t }
@@ -30,7 +30,7 @@ struct Lose: Codable, Hashable {
             return
         }
         if let b = try? c.decode(Bool.self) { text = b ? "true" : "false"; return }
-        throw DecodingError.typeMismatch(Lose.self, .init(
+        throw DecodingError.typeMismatch(LooseValue.self, .init(
             codingPath: decoder.codingPath, debugDescription: "weder Text noch Zahl"))
     }
 
@@ -39,10 +39,10 @@ struct Lose: Codable, Hashable {
         try c.encode(text)
     }
 
-    var zahl: Int? { Int(text) }
+    var numeric: Int? { Int(text) }
 }
 
-extension Lose: CustomStringConvertible {
+extension LooseValue: CustomStringConvertible {
     var description: String { text }
 }
 
@@ -51,16 +51,16 @@ extension Lose: CustomStringConvertible {
 /// Ohne das wirft `[Spieler]` beim ersten kaputten Eintrag, und die ganze
 /// Spielerliste ist weg statt nur um einen Eintrag kuerzer - in einer Lobby
 /// hiesse das: Bildschirm leer, obwohl sieben Leute drin sitzen.
-struct Durchlaessig<T: Decodable>: Decodable {
-    let liste: [T]
+struct LenientArray<T: Decodable>: Decodable {
+    let items: [T]
 
     init(from decoder: Decoder) throws {
         var c = try decoder.unkeyedContainer()
-        var raus: [T] = []
+        var kept: [T] = []
         while !c.isAtEnd {
-            if let eins = try? c.decode(T.self) {
-                raus.append(eins)
-            } else if (try? c.decode(Leer.self)) != nil {
+            if let decoded = try? c.decode(T.self) {
+                kept.append(decoded)
+            } else if (try? c.decode(EmptyObject.self)) != nil {
                 // Eintrag war ein Objekt, nur kein brauchbares - uebersprungen.
             } else {
                 // Weder das eine noch das andere: ein fehlgeschlagenes decode
@@ -69,10 +69,10 @@ struct Durchlaessig<T: Decodable>: Decodable {
                 break
             }
         }
-        liste = raus
+        items = kept
     }
 
     /// Nimmt jedes JSON-Objekt an, ohne ein Feld zu verlangen - damit ist es
     /// genau das Werkzeug, um einen Platz zu ueberspringen.
-    private struct Leer: Decodable {}
+    private struct EmptyObject: Decodable {}
 }

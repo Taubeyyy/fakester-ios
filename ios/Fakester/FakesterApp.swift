@@ -3,131 +3,131 @@ import SwiftUI
 @main
 struct FakesterApp: App {
     @StateObject private var api = Api.shared
-    @StateObject private var spiel = Spiel()
+    @StateObject private var game = Game()
 
     var body: some Scene {
         WindowGroup {
-            Wurzel()
+            RootView()
                 .environmentObject(api)
-                .environmentObject(spiel)
+                .environmentObject(game)
                 .preferredColorScheme(.dark)
-                .tint(Farbe.akzent)
+                .tint(Palette.accent)
         }
     }
 }
 
 /// Entscheidet, welcher Bildschirm dran ist. Die Lage kommt vom Server - die
 /// App haelt keine eigene Meinung darueber, in welchem Teil des Spiels man ist.
-struct Wurzel: View {
+struct RootView: View {
     @EnvironmentObject private var api: Api
-    @EnvironmentObject private var spiel: Spiel
-    @State private var rueckmeldung = false
+    @EnvironmentObject private var game: Game
+    @State private var feedbackOpen = false
 
     var body: some View {
         ZStack {
-            Buehne()
-            bildschirm
+            Backdrop()
+            currentScreen
         }
-        .animation(.easeInOut(duration: 0.22), value: spiel.lage)
+        .animation(.easeInOut(duration: 0.22), value: game.currentPhase)
         // Der Server redet mit kurzen Hinweisen ("Game not found!"), und die
         // gehen sonst unter.
-        .overlay(alignment: .top) { Durchsage() }
-        .alert("Kicked", isPresented: .constant(spiel.rauswurf != nil)) {
-            Button("Ok") { spiel.verlassen() }
+        .overlay(alignment: .top) { ToastBanner() }
+        .alert("Kicked", isPresented: .constant(game.kick != nil)) {
+            Button("Ok") { game.leave() }
         } message: {
-            Text(rauswurfText)
+            Text(kickText)
         }
         .task {
             #if DEBUG
-            Vorschau.abspielen(spiel)
+            ScreenshotScene.run(game)
             #endif
-            await api.profilAuffrischen()
-            await Aktualisierung.shared.pruefen()
+            await api.refreshProfile()
+            await Updater.shared.checkForUpdate()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            Task { await Aktualisierung.shared.pruefen() }
+            Task { await Updater.shared.checkForUpdate() }
         }
         // Schuetteln = Feedback an den Entwickler, egal wo
-        .onReceive(NotificationCenter.default.publisher(for: .geschuettelt)) { _ in rueckmeldung = true }
-        .sheet(isPresented: $rueckmeldung) {
-            RueckmeldungsBlatt(bildschirm: "\(spiel.lage)")
+        .onReceive(NotificationCenter.default.publisher(for: .deviceShaken)) { _ in feedbackOpen = true }
+        .sheet(isPresented: $feedbackOpen) {
+            FeedbackSheet(currentScreen: "\(game.currentPhase)")
         }
     }
 
     @ViewBuilder
-    private var bildschirm: some View {
+    private var currentScreen: some View {
         #if DEBUG
-        if Vorschau.szene == "erstellen" {
-            ErstellenAnsicht()
-        } else if Vorschau.szene == "rangliste" {
-            RanglistenAnsicht()
+        if ScreenshotScene.sceneName == "erstellen" {
+            CreateGameView()
+        } else if ScreenshotScene.sceneName == "rangliste" {
+            LeaderboardView()
         } else {
-            spielBildschirm
+            gameScreen
         }
         #else
-        spielBildschirm
+        gameScreen
         #endif
     }
 
     @ViewBuilder
-    private var spielBildschirm: some View {
-        switch spiel.lage {
-        case .getrennt:
-            if api.ausweis == nil { AnmeldeAnsicht() } else { DaheimAnsicht() }
-        case .verbinde:
-            Warten(text: "Connecting…")
+    private var gameScreen: some View {
+        switch game.currentPhase {
+        case .disconnected:
+            if api.identity == nil { LoginView() } else { HomeView() }
+        case .connecting:
+            WaitingView(text: "Connecting…")
         case .lobby:
-            LobbyAnsicht()
-        case .laedt:
-            LadeAnsicht()
-        case .runde:
-            RundenAnsicht()
-        case .aufloesung:
-            AufloesungAnsicht()
-        case .ende:
-            EndeAnsicht()
+            LobbyView()
+        case .loading:
+            LoadingView()
+        case .activeRound:
+            RoundView()
+        case .reveal:
+            RevealView()
+        case .end:
+            GameOverView()
         }
     }
 
-    private var rauswurfText: String {
-        guard let r = spiel.rauswurf else { return "" }
-        var zeilen: [String] = []
-        if r.banned { zeilen.append("You are banned.") }
-        if let g = r.reason, !g.isEmpty { zeilen.append(g) }
-        if let m = r.minutesLeft { zeilen.append("\(m) minutes left.") }
-        return zeilen.isEmpty ? "The host removed you." : zeilen.joined(separator: "\n")
+    private var kickText: String {
+        guard let r = game.kick else { return "" }
+        var lines: [String] = []
+        if r.banned { lines.append("You are banned.") }
+        if let g = r.reason, !g.isEmpty { lines.append(g) }
+        if let m = r.minutesLeft { lines.append("\(m) minutes left.") }
+        return lines.isEmpty ? "The host removed you." : lines.joined(separator: "\n")
     }
 }
 
-struct Warten: View {
+struct WaitingView: View {
     let text: String
     var body: some View {
         VStack(spacing: 14) {
-            ProgressView().tint(Farbe.akzent)
+            ProgressView().tint(Palette.accent)
             Text(text)
-                .font(.marke(15, .medium))
-                .foregroundColor(Farbe.gedaempft)
+                .font(.brand(15, .medium))
+                .foregroundColor(Palette.subdued)
         }
     }
 }
 
 /// Kurzer Hinweis oben, der von selbst wieder geht.
-struct Durchsage: View {
-    @EnvironmentObject private var spiel: Spiel
+struct ToastBanner: View {
+    @EnvironmentObject private var game: Game
 
     var body: some View {
-        if let text = spiel.meldung {
+        if let text = game.notice {
             Text(text)
-                .font(.marke(14, .semibold))
-                .foregroundColor(Farbe.schrift)
+                .font(.brand(14, .semibold))
+                .foregroundColor(Palette.foreground)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 11)
-                .background(Glas(radius: 999))
+                .background(GlassPanel(radius: 999))
                 .padding(.top, 8)
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .task(id: text) {
                     try? await Task.sleep(nanoseconds: 2_800_000_000)
-                    withAnimation { spiel.meldung = nil }
+                    withAnimation { game.notice = nil }
                 }
         }
     }
