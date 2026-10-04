@@ -1,14 +1,14 @@
 import Foundation
 
-// Was die App neu kann: ein Spiel selbst aufmachen, im Spiel mit Emojis
-// reagieren und die Bestenliste ansehen. Die Formen hier sind am 2026-10-04
-// gegen den laufenden Server geprueft (siehe Tests/Mitschnitt.swift) - nicht
-// nur aus dem Web-Bundle abgelesen.
+// What the app can do now: host a game itself, react with emojis during a
+// game and view the leaderboard. The shapes here were checked against the
+// live server on 2026-10-04 (see Tests/Capture.swift) - not just read from
+// the web bundle.
 
-// MARK: - Spiel erstellen
+// MARK: - Create game
 
-/// Eine Playlist im Mix. Der Browser erlaubt mehrere und gewichtet sie; die App
-/// faengt mit einer an und schickt sie in derselben Form.
+/// One playlist in the mix. The browser allows several and weights them; the app
+/// starts with one and sends it in the same shape.
 struct PlaylistEntry: Hashable, Identifiable {
     let id: String
     let name: String
@@ -16,7 +16,7 @@ struct PlaylistEntry: Hashable, Identifiable {
     let origin: String      // "spotify" | "youtube"
 }
 
-/// Antwort von `GET /playlist/info?url=…`.
+/// Response of `GET /playlist/info?url=…`.
 struct PlaylistInfo: Decodable {
     let id: String
     let name: String
@@ -39,7 +39,7 @@ struct PlaylistInfo: Decodable {
     }
 }
 
-/// Antwort von `GET /playlists/featured`.
+/// Response of `GET /playlists/featured`.
 struct FeaturedPlaylists: Decodable {
     let entries: [PlaylistEntry]
 
@@ -67,8 +67,8 @@ struct FeaturedPlaylists: Decodable {
     }
 }
 
-/// Die Einstellungen fuer `create-game`. Feldnamen genau wie im Browser
-/// (`F3` im Bundle), der Server liest sie so.
+/// The settings for `create-game`. Field names exactly as in the browser
+/// (`F3` in the bundle), since that is how the server reads them.
 struct GameSetup: Equatable {
     var playlist: PlaylistEntry?
     var songs: Int = 10
@@ -93,11 +93,11 @@ struct GameSetup: Equatable {
         if heading { a.append("title") }
         if guessArtist { a.append("artist") }
         if guessYear { a.append("year") }
-        // Wie im Browser: nichts gewaehlt heisst Titel.
+        // As in the browser: nothing selected means title.
         return a.isEmpty ? ["title"] : a
     }
 
-    /// Ohne Playlist gibt es nichts zu senden - der Knopf bleibt dann aus.
+    /// Without a playlist there is nothing to send - the button stays disabled.
     func payloadObject() -> [String: Any]? {
         guard let p = playlist else { return nil }
         return [
@@ -123,16 +123,16 @@ struct GameSetup: Equatable {
     }
 }
 
-// MARK: - Reaktionen
+// MARK: - Reactions
 
-/// `player-reacted` - jemand hat auf einen Emoji-Knopf gedrueckt.
+/// `player-reacted` - someone tapped an emoji button.
 struct Reaction: Decodable, Identifiable, Hashable {
     let id = UUID()
     let senderId: String
     let nickname: String
     let reaction: String
 
-    /// Dieselben fuenf wie im Browser (`b3` im Bundle).
+    /// The same five as in the browser (`b3` in the bundle).
     static let choices: [String] = ["❤️", "🤩", "😂", "💕", "😮"]
 
     private enum CodingKeys: String, CodingKey { case playerId, nickname, reaction }
@@ -144,9 +144,9 @@ struct Reaction: Decodable, Identifiable, Hashable {
     }
 }
 
-// MARK: - Bestenliste
+// MARK: - Leaderboard
 
-/// `GET /leaderboard?sort=…&limit=100` - oeffentlich, ohne Konto lesbar.
+/// `GET /leaderboard?sort=…&limit=100` - public, readable without an account.
 struct Leaderboard: Decodable {
     let entries: [Entry]
 
@@ -168,7 +168,7 @@ struct Leaderboard: Decodable {
         }
     }
 
-    /// Die Reiter wie im Browser (`Km` im Bundle).
+    /// The tabs as in the browser (`Km` in the bundle).
     struct SortOption: Identifiable, Hashable {
         let id: String
         let name: String

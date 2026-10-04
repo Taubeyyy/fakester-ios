@@ -1,44 +1,43 @@
 import Foundation
 
-/// Das Spielprotokoll von fakester.app, so wie `server.js` es tatsaechlich spricht.
+/// The fakester.app game protocol, as `server.js` actually speaks it.
 ///
-/// Alles laeuft ueber einen Umschlag `{type, payload}` auf einer WebSocket unter
-/// `/fakester/ws`. Die Formen hier sind aus dem Server abgelesen, nicht aus dem
-/// Browser-Client - von dem existiert nur noch das gebaute Bundle, der Server
-/// ist die einzige lesbare Wahrheit.
+/// Everything goes through an envelope `{type, payload}` on a WebSocket at
+/// `/fakester/ws`. The shapes here were read from the server, not from the
+/// browser client - only its built bundle still exists, so the server is the
+/// only readable source of truth.
 
-// MARK: - Umschlag
+// MARK: - Envelope
 
 struct Envelope<Payload: Decodable>: Decodable {
     let type: String
     let payload: Payload?
 }
 
-/// Liest nur den Typ. Die Nutzlast wird erst danach in die passende Form
-/// dekodiert - zweimal durch dieselben Bytes, aber dafuer typsicher und ohne
-/// eine Allerwelts-JSON-Darstellung durch die ganze App zu schleifen.
+/// Reads only the type. The payload is decoded into the matching shape
+/// afterwards - two passes over the same bytes, but type-safe and without
+/// dragging a catch-all JSON representation through the whole app.
 struct TypeOnly: Decodable { let type: String }
 
-// MARK: - Bausteine
+// MARK: - Building blocks
 
 struct ScoreItem: Decodable, Hashable {
     let points: Int
     let text: String
 }
 
-/// Was eine Runde dem Spieler gebracht hat.
+/// What a round earned the player.
 ///
-/// Der Server schickt das NICHT als Woerterbuch aus Bewertungen, sondern mit
-/// einer Huelle darum: `{total, breakdown, ownAnswer}`. Direkt aus `server.js`
-/// gelesen sah es wie das Innere aus - erst eine mitgeschnittene echte Runde
-/// hat die Huelle gezeigt. Ohne sie waere die Aufstellung nach jeder Runde
-/// stumm leer geblieben, weil `total` als Zahl das Dekodieren hat scheitern
-/// lassen.
+/// The server does NOT send this as a dictionary of scores but with a wrapper
+/// around it: `{total, breakdown, ownAnswer}`. Read straight from `server.js`
+/// it looked like the inner part - only a captured real round revealed the
+/// wrapper. Without it the breakdown would have silently stayed empty after
+/// every round, because `total` being a number made decoding fail.
 struct PointsBreakdown: Decodable, Hashable {
     let total: Int
     let breakdown: [String: ScoreItem]
-    /// Was man selbst geantwortet hat. Beim Quiz Text, bei Timeline eine
-    /// Position als Zahl - deshalb `Lose`.
+    /// What the player answered. Text in quiz mode, a position as a number
+    /// in timeline mode - hence `LooseValue`.
     let ownAnswer: [String: LooseValue]?
 
     private enum CodingKeys: String, CodingKey { case total, breakdown, ownAnswer }
@@ -70,7 +69,7 @@ struct Player: Decodable, Identifiable, Hashable {
     let avatarUrl: String?
     let emoji: String?
     let lastPointsBreakdown: PointsBreakdown?
-    /// Nur im Endstand gefuellt.
+    /// Only filled in the final standings.
     let rewards: Reward?
 
     private enum CodingKeys: String, CodingKey {
@@ -123,7 +122,7 @@ struct LobbySettings: Decodable, Hashable {
     let guessTime: Int
     let revealTime: Int
     let answerType: String        // "multiple" | "text"
-    let guessTypes: [String]      // Teilmenge von title / artist / year
+    let guessTypes: [String]      // subset of title / artist / year
     let playlistName: String?
     let showCover: Bool
     let speedBonus: Bool
@@ -131,7 +130,7 @@ struct LobbySettings: Decodable, Hashable {
     let boxMode: Bool
     let sneakyMode: Bool
 
-    /// Multiple Choice? Alles andere ist Freitext.
+    /// Multiple choice? Anything else is free text.
     var isMultipleChoice: Bool { answerType == "multiple" }
 
     private enum CodingKeys: String, CodingKey {
@@ -171,7 +170,7 @@ struct Track: Decodable, Hashable {
     }
 }
 
-// MARK: - Nutzlasten
+// MARK: - Payloads
 
 struct LobbyUpdate: Decodable {
     let pin: String
@@ -202,11 +201,11 @@ struct NewRound: Decodable {
     let albumArt: String?
     let guessTypes: [String]
     let isReverse: Bool
-    /// Schonfrist, bevor die Uhr laeuft - der Server rechnet den
-    /// Schnelligkeitsbonus erst ab danach.
+    /// Grace period before the clock starts - the server only counts the
+    /// speed bonus from then on.
     let startDelayMs: Int
-    /// Auswahlmoeglichkeiten je Rateart. Das Jahr kommt als Zahl, Titel und
-    /// Interpret als Text - im selben Objekt. Deshalb `Lose`.
+    /// Choices per guess type. The year arrives as a number, title and artist
+    /// as text - in the same object. Hence `LooseValue`.
     let mcOptions: [String: [LooseValue]]
 
     private enum CodingKeys: String, CodingKey {
@@ -228,7 +227,7 @@ struct NewRound: Decodable {
 struct RoundResult: Decodable {
     let correctTrack: Track?
     let scores: [Player]
-    /// Im Sneaky Mode bleibt der Song verdeckt.
+    /// In sneaky mode the song stays hidden.
     let sneaky: Bool
 
     private enum CodingKeys: String, CodingKey { case correctTrack, scores, sneaky }
@@ -336,16 +335,16 @@ struct StartMessage: Decodable {
     }
 }
 
-// MARK: - Was die App schickt
+// MARK: - What the app sends
 
-/// Die Antwort einer Quiz-Runde. Der Server erwartet durchweg Text, auch beim
-/// Jahr - er liest es mit `parseInt`.
+/// The answer for a quiz round. The server expects text throughout, even for
+/// the year - it reads it with `parseInt`.
 struct Answer: Encodable, Equatable {
     var title: String = ""
     var artist: String = ""
     var year: String = ""
 
-    /// Steht zu jeder verlangten Rateart etwas da?
+    /// Is there something filled in for every required guess type?
     func isComplete(covering kinds: [String]) -> Bool {
         kinds.allSatisfy { kind in
             switch kind {
@@ -377,9 +376,9 @@ struct Answer: Encodable, Equatable {
     }
 }
 
-/// Der Spieler, so wie ihn `create-game` und `join-game` erwarten. Der Server
-/// legt daraus den Lobby-Eintrag an; die Felder heissen dort wie in der
-/// Datenbank, daher die Unterstriche.
+/// The player as `create-game` and `join-game` expect it. The server builds
+/// the lobby entry from it; the fields are named as in the database, hence
+/// the underscores.
 struct PlayerIdentity: Encodable {
     let id: String
     let username: String
@@ -391,8 +390,8 @@ struct PlayerIdentity: Encodable {
     var avatar_url: String? = nil
     var equipped_emoji: String? = nil
 
-    /// Gast-IDs muessen eindeutig sein und duerfen mit keiner Konto-ID
-    /// kollidieren - der Browser-Client baut sie nach demselben Muster.
+    /// Guest IDs must be unique and must not collide with any account ID -
+    /// the browser client builds them with the same pattern.
     static func guest(name: String) -> PlayerIdentity {
         let randomSuffix = String(UUID().uuidString.prefix(8)).lowercased()
         return PlayerIdentity(id: "guest-\(Int(Date().timeIntervalSince1970 * 1000))-\(randomSuffix)",

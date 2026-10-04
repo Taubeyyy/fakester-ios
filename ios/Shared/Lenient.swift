@@ -1,20 +1,19 @@
 import Foundation
 
-/// Nachsichtige Dekodier-Hilfen.
+/// Lenient decoding helpers.
 ///
-/// Der Server ist in JavaScript geschrieben, und dort ist der Typ eines Feldes
-/// eine Laune der Datenquelle: eine Spieler-ID kommt als Zahl aus Postgres,
-/// aber als Text (`"guest-1712…"`), wenn der Spieler ein Gast ist. Beim Jahr
-/// dasselbe - die Auswahlmoeglichkeiten einer Runde kommen fuer den Titel als
-/// Text und fuer das Jahr als Zahl, im selben Objekt.
+/// The server is written in JavaScript, where the type of a field is a whim of
+/// the data source: a player ID comes from Postgres as a number, but as text
+/// (`"guest-1712…"`) when the player is a guest. Same with the year - a round's
+/// choices arrive as text for the title and as numbers for the year, in the
+/// same object.
 ///
-/// Swift ist da strenger, und diese Strenge ist hier gefaehrlich: ein
-/// Dekodierfehler mitten in einer Runde heisst, dass die Nachricht verworfen
-/// wird und der Bildschirm einfach stehen bleibt. Deshalb geht alles, was von
-/// aussen kommt, durch diese zwei Typen, statt sich auf eine Form zu verlassen,
-/// die der Server nie zugesagt hat.
+/// Swift is stricter, and that strictness is dangerous here: a decoding error
+/// in the middle of a round means the message is dropped and the screen simply
+/// freezes. So everything coming from outside goes through these two types
+/// instead of relying on a shape the server never promised.
 
-/// Zahl oder Text - kommt immer als Text heraus.
+/// Number or text - always comes out as text.
 struct LooseValue: Codable, Hashable {
     let text: String
 
@@ -25,13 +24,13 @@ struct LooseValue: Codable, Hashable {
         if let s = try? c.decode(String.self) { text = s; return }
         if let i = try? c.decode(Int.self) { text = String(i); return }
         if let d = try? c.decode(Double.self) {
-            // 1994.0 soll "1994" ergeben, nicht "1994.0".
+            // 1994.0 should become "1994", not "1994.0".
             text = d == d.rounded() ? String(Int(d)) : String(d)
             return
         }
         if let b = try? c.decode(Bool.self) { text = b ? "true" : "false"; return }
         throw DecodingError.typeMismatch(LooseValue.self, .init(
-            codingPath: decoder.codingPath, debugDescription: "weder Text noch Zahl"))
+            codingPath: decoder.codingPath, debugDescription: "neither text nor number"))
     }
 
     func encode(to encoder: Encoder) throws {
@@ -46,11 +45,11 @@ extension LooseValue: CustomStringConvertible {
     var description: String { text }
 }
 
-/// Eine Liste, bei der ein unbrauchbarer Eintrag nur sich selbst kostet.
+/// A list where an unusable entry only costs itself.
 ///
-/// Ohne das wirft `[Spieler]` beim ersten kaputten Eintrag, und die ganze
-/// Spielerliste ist weg statt nur um einen Eintrag kuerzer - in einer Lobby
-/// hiesse das: Bildschirm leer, obwohl sieben Leute drin sitzen.
+/// Without this, `[Player]` throws on the first broken entry and the whole
+/// player list is gone instead of just one entry shorter - in a lobby that
+/// would mean an empty screen even though seven people are in it.
 struct LenientArray<T: Decodable>: Decodable {
     let items: [T]
 
@@ -61,18 +60,18 @@ struct LenientArray<T: Decodable>: Decodable {
             if let decoded = try? c.decode(T.self) {
                 kept.append(decoded)
             } else if (try? c.decode(EmptyObject.self)) != nil {
-                // Eintrag war ein Objekt, nur kein brauchbares - uebersprungen.
+                // The entry was an object, just not a usable one - skipped.
             } else {
-                // Weder das eine noch das andere: ein fehlgeschlagenes decode
-                // rueckt den Index NICHT vor, wir kaemen also nie ans Ende.
-                // Lieber hier abbrechen als die App haengen lassen.
+                // Neither: a failed decode does NOT advance the index, so we
+                // would never reach the end. Better to stop here than to hang
+                // the app.
                 break
             }
         }
         items = kept
     }
 
-    /// Nimmt jedes JSON-Objekt an, ohne ein Feld zu verlangen - damit ist es
-    /// genau das Werkzeug, um einen Platz zu ueberspringen.
+    /// Accepts any JSON object without requiring a field - which makes it
+    /// exactly the tool for skipping a slot.
     private struct EmptyObject: Decodable {}
 }
