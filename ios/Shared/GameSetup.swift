@@ -97,6 +97,56 @@ struct GameSetup: Equatable {
         return a.isEmpty ? ["title"] : a
     }
 
+    init() {}
+
+    /// The lobby's current settings as the starting point of the host's
+    /// "Lobby settings" sheet.
+    init(lobby s: LobbySettings) {
+        songs = s.songCount
+        guessSeconds = s.guessTime
+        pause = s.revealTime
+        freeText = !s.isMultipleChoice
+        heading = s.guessTypes.contains("title")
+        guessArtist = s.guessTypes.contains("artist")
+        guessYear = s.guessTypes.contains("year")
+        cover = s.showCover
+        speedBonusEnabled = s.speedBonus
+        streakBonusEnabled = s.streakBonus
+        sneaky = s.sneakyMode
+        if let first = s.playlists.first {
+            playlist = PlaylistEntry(id: first.id, name: first.name, picture: nil, origin: first.source)
+        }
+    }
+
+    /// `update-lobby-settings` - the fields the browser's settings sheet sends
+    /// (`t0` in the bundle). The lobby's playlist mix is passed back unchanged,
+    /// boxMode/hostPlays as well: the app does not offer Speaker Mode.
+    func settingsUpdate(keeping s: LobbySettings) -> [String: Any] {
+        var d: [String: Any] = [
+            "gameMode": "quiz",
+            "songCount": songs,
+            "guessTime": guessSeconds,
+            "revealTime": pause,
+            "answerType": freeText ? "freestyle" : "multiple",
+            "guessTypes": guessKinds,
+            "showCover": cover,
+            "speedBonus": speedBonusEnabled,
+            "streakBonus": streakBonusEnabled,
+            "boxMode": s.boxMode,
+            "sneakyMode": sneaky,
+            "hostPlays": s.boxMode ? s.hostPlays : true
+        ]
+        if !s.playlists.isEmpty {
+            d["playlistId"] = s.playlists[0].id
+            d["playlistName"] = s.playlists.count > 1 ? s.playlists.map { $0.name }.joined(separator: " + ") : s.playlists[0].name
+            d["playlists"] = s.playlists.map { $0.payload }
+        } else if let id = s.playlistId {
+            d["playlistId"] = id
+            d["playlistName"] = s.playlistName ?? "Playlist"
+        }
+        return d
+    }
+
     /// Without a playlist there is nothing to send - the button stays disabled.
     func payloadObject() -> [String: Any]? {
         guard let p = playlist else { return nil }

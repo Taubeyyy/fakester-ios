@@ -323,5 +323,29 @@ expectEqual("bonus claimed", parse(DailyBonusClaim.self, #"{"claimed":true,"stre
 
 // MARK: -
 
+// MARK: - Lobby settings (host edits them in the lobby)
+
+section("Lobby settings")
+let lobbyJSON = #"""
+{"songCount":5,"guessTime":20,"answerType":"multiple","guessTypes":["title","artist","year"],"playlistName":"Featured","playlistId":"2Jc0amXy2IvLyTofJKgiYg","showCover":true,"boxMode":false,"hostPlays":true,"sneakyMode":false,"revealTime":5,"speedBonus":true,"streakBonus":true,"playlists":[{"id":"2Jc0amXy2IvLyTofJKgiYg","source":"spotify","name":"Featured","weight":10}]}
+"""#
+let lobbySettings = parse(LobbySettings.self, lobbyJSON)
+expectEqual("lobby settings: playlist mix read", lobbySettings?.playlists.count, 1)
+expectEqual("lobby settings: weight kept", lobbySettings?.playlists.first?.weight, 10)
+if let ls = lobbySettings {
+    var edit = GameSetup(lobby: ls)
+    expectEqual("lobby settings: songs taken over", edit.songs, 5)
+    expect("lobby settings: all three guess types", edit.heading && edit.guessArtist && edit.guessYear)
+    edit.songs = 15
+    edit.freeText = true
+    let update = edit.settingsUpdate(keeping: ls)
+    expectEqual("update: songCount", update["songCount"] as? Int, 15)
+    expectEqual("update: free text", update["answerType"] as? String, "freestyle")
+    expectEqual("update: playlist id kept", update["playlistId"] as? String, "2Jc0amXy2IvLyTofJKgiYg")
+    let mix = update["playlists"] as? [[String: Any]]
+    expectEqual("update: weight passed back", mix?.first?["weight"] as? Int, 10)
+    expect("update: valid JSON", JSONSerialization.isValidJSONObject(update))
+}
+
 print("\n\(checkCount) checks, \(failures) failures")
 exit(failures == 0 ? 0 : 1)

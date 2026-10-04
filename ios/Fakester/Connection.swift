@@ -220,6 +220,21 @@ final class Game: NSObject, ObservableObject {
         emit("start-game", [:])
     }
 
+    /// Host only: change the lobby's settings (the browser's "Lobby settings"
+    /// sheet). The server answers with a lobby-update carrying the new values.
+    func updateLobbySettings(_ settings: [String: Any]) {
+        guard iAmHost else { return }
+        emit("update-lobby-settings", settings)
+    }
+
+    /// Host only: remove a player from the lobby (`kick-player {targetId}`).
+    /// IDs are numbers for accounts and text for guests - sent the same way.
+    func kick(_ playerId: String) {
+        guard iAmHost, playerId != ownId else { return }
+        let target: Any = Int(playerId).map { $0 as Any } ?? playerId
+        emit("kick-player", ["targetId": target])
+    }
+
     func returnToLobby() {
         wantsLobby = true
         emit("return-to-lobby", [:])

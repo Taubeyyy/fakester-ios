@@ -129,6 +129,37 @@ struct LobbySettings: Decodable, Hashable {
     let streakBonus: Bool
     let boxMode: Bool
     let sneakyMode: Bool
+    let hostPlays: Bool
+    let playlistId: String?
+    /// The playlist mix as the server keeps it - passed back unchanged when the
+    /// host edits the other settings.
+    let playlists: [PlaylistRef]
+
+    /// One playlist of the mix: `{id, source, name, weight, maxSongs?}`.
+    struct PlaylistRef: Decodable, Hashable {
+        let id: String
+        let source: String
+        let name: String
+        let weight: Int
+        let maxSongs: Int?
+
+        private enum CodingKeys: String, CodingKey { case id, source, name, weight, maxSongs }
+        init(from d: Decoder) throws {
+            let c = try d.container(keyedBy: CodingKeys.self)
+            id = ((try? c.decode(LooseValue.self, forKey: .id)) ?? LooseValue("")).text
+            source = (try? c.decode(String.self, forKey: .source)) ?? "spotify"
+            name = (try? c.decode(String.self, forKey: .name)) ?? "Playlist"
+            weight = (try? c.decode(LooseValue.self, forKey: .weight))?.numeric ?? 1
+            maxSongs = (try? c.decode(LooseValue.self, forKey: .maxSongs))?.numeric
+        }
+
+        /// Back into the shape the server expects (`q1` in the bundle).
+        var payload: [String: Any] {
+            var d: [String: Any] = ["id": id, "source": source, "name": name, "weight": weight]
+            if let m = maxSongs { d["maxSongs"] = m }
+            return d
+        }
+    }
 
     /// Multiple choice? Anything else is free text.
     var isMultipleChoice: Bool { answerType == "multiple" }
@@ -136,6 +167,7 @@ struct LobbySettings: Decodable, Hashable {
     private enum CodingKeys: String, CodingKey {
         case songCount, guessTime, revealTime, answerType, guessTypes
         case playlistName, showCover, speedBonus, streakBonus, boxMode, sneakyMode
+        case hostPlays, playlistId, playlists
     }
 
     init(from d: Decoder) throws {
@@ -151,6 +183,9 @@ struct LobbySettings: Decodable, Hashable {
         streakBonus = (try? c.decode(Bool.self, forKey: .streakBonus)) ?? true
         boxMode = (try? c.decode(Bool.self, forKey: .boxMode)) ?? false
         sneakyMode = (try? c.decode(Bool.self, forKey: .sneakyMode)) ?? false
+        hostPlays = (try? c.decode(Bool.self, forKey: .hostPlays)) ?? true
+        playlistId = (try? c.decode(LooseValue.self, forKey: .playlistId))?.text
+        playlists = (try? c.decode(LenientArray<PlaylistRef>.self, forKey: .playlists))?.items ?? []
     }
 }
 
