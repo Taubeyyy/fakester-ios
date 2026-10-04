@@ -50,6 +50,10 @@ ein React-Quelltext existiert nirgends mehr.
 - Der Startbildschirm passt im Browser auf **einen** Bildschirm ohne Wischen. Das ist eine
   Vorgabe, keine Zierde: `DaheimAnsicht` misst die Höhe und rückt bei kleinen Geräten zusammen
   (`eng`). Wer dort etwas hinzufügt, prüft, ob es noch passt.
+- **Aussehen nicht nebenbei ändern.** Build 122 hat den Startbildschirm für kleine Geräte noch
+  weiter geschrumpft (kleineres Logo, Zahlen/Tipp weg), um Scrollen zu vermeiden – Edwin fand das
+  deutlich schlechter, Build 123 hat es zurückgenommen. Wenn ein Wunsch nur mit sichtbaren
+  Abstrichen am Aussehen geht: so lassen und Edwin fragen.
 
 ## Fallen
 

@@ -25,27 +25,28 @@ struct DaheimAnsicht: View {
         // auf einem kleinen Geraet rueckt alles zusammen, statt unten
         // abzuschneiden. Gescrollt wird nur, wenn es wirklich nicht passt
         // (SE mit grosser Schrift, offene PIN-Karte) - sonst steht alles still.
+        // Aussehen bewusst wie Build 121: ein eigenes, noch kleineres Layout
+        // fuer kleine Geraete (Build 122) gefiel Edwin deutlich schlechter.
         GeometryReader { geo in
             let hoehe: CGFloat = geo.size.height
-            let winzig: Bool = hoehe < 700
+            let luft: CGFloat = hoehe < 700 ? 8 : (hoehe < 800 ? 10 : 13)
             let eng: Bool = hoehe < 800
-            let luft: CGFloat = winzig ? 6 : (eng ? 9 : 13)
             ScrollView {
                 VStack(spacing: luft) {
                     kopf
                     AktualisierungsKarte()
-                    held(eng: eng, winzig: winzig)
+                    held(eng: eng)
                     spielknoepfe
                     if beitreten { pinKarte.transition(.opacity.combined(with: .move(edge: .top))) }
                     DailyKarte(eng: eng) { nurImBrowser("Daily") }
                     kacheln(eng: eng)
-                    ruhigeKnoepfe(eng: eng, winzig: winzig)
-                    StufenKarte(eng: eng, winzig: winzig)
-                    fuss(winzig: winzig)
+                    ruhigeKnoepfe(eng: eng)
+                    StufenKarte(eng: eng)
+                    fuss
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, winzig ? 4 : 8)
-                .padding(.bottom, winzig ? 8 : 16)
+                .padding(.top, 8)
+                .padding(.bottom, 16)
                 .background(
                     GeometryReader { innen in
                         Color.clear.preference(key: InhaltHoehe.self, value: innen.size.height)
@@ -77,12 +78,12 @@ struct DaheimAnsicht: View {
         }
     }
 
-    private func held(eng: Bool, winzig: Bool) -> some View {
+    private func held(eng: Bool) -> some View {
         VStack(spacing: 4) {
             Equalizer()
-            Schriftzug(groesse: winzig ? 38 : (eng ? 44 : 52))
+            Schriftzug(groesse: eng ? 44 : 52)
         }
-        .padding(.top, winzig ? 0 : (eng ? 6 : 14))
+        .padding(.top, eng ? 6 : 14)
     }
 
     // MARK: Spielen
@@ -138,11 +139,11 @@ struct DaheimAnsicht: View {
         }
     }
 
-    private func ruhigeKnoepfe(eng: Bool, winzig: Bool) -> some View {
+    private func ruhigeKnoepfe(eng: Bool) -> some View {
         let spalten: [GridItem] = [GridItem(.flexible(), spacing: 9), GridItem(.flexible(), spacing: 9)]
-        return LazyVGrid(columns: spalten, spacing: winzig ? 7 : 9) {
+        return LazyVGrid(columns: spalten, spacing: 9) {
             ForEach(Kachel.ruhige) { k in
-                FlachKnopf(name: k.name, symbol: k.symbol, eng: eng, winzig: winzig) {
+                FlachKnopf(name: k.name, symbol: k.symbol, eng: eng) {
                     if k.id == "settings" {
                         Spuerbar.tipp()
                         einstellungen = true
@@ -156,7 +157,7 @@ struct DaheimAnsicht: View {
 
     // MARK: Fuss
 
-    private func fuss(winzig: Bool) -> some View {
+    private var fuss: some View {
         VStack(spacing: 10) {
             HStack(spacing: 8) {
                 FussKnopf(name: L("Abmelden", "Logout"), symbol: "rectangle.portrait.and.arrow.right") {
@@ -167,13 +168,10 @@ struct DaheimAnsicht: View {
                 }
                 SprachKnopf()
             }
-            // Auf kleinen Geraeten kostet der Tipp genau die Zeile, die fehlt.
-            if !winzig {
-                Text(L("Tipp: Handy schütteln schickt auch Feedback.",
-                       "Tip: shake your phone to send feedback too."))
-                    .font(.marke(11))
-                    .foregroundColor(Farbe.leise)
-            }
+            Text(L("Tipp: Handy schütteln schickt auch Feedback.",
+                   "Tip: shake your phone to send feedback too."))
+                .font(.marke(11))
+                .foregroundColor(Farbe.leise)
         }
         .padding(.top, 2)
     }
@@ -341,7 +339,6 @@ struct FlachKnopf: View {
     let name: String
     let symbol: String
     var eng: Bool = false
-    var winzig: Bool = false
     let aktion: () -> Void
 
     var body: some View {
@@ -357,7 +354,7 @@ struct FlachKnopf: View {
                     .minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: winzig ? 40 : (eng ? 44 : 50))
+            .frame(height: eng ? 44 : 50)
             .background(Glas(radius: 16))
         }
         .buttonStyle(BubbleDruck())
@@ -390,8 +387,6 @@ struct FussKnopf: View {
 /// Nullen waere nur eine Erinnerung daran.
 struct StufenKarte: View {
     var eng: Bool = false
-    /// Auf kleinen Geraeten fallen die drei Zahlen weg - Stufe und Balken bleiben.
-    var winzig: Bool = false
     @EnvironmentObject private var api: Api
 
     var body: some View {
@@ -422,12 +417,10 @@ struct StufenKarte: View {
 
                     Balken(anteil: Api.Stufe.anteil(xp: xp), farbe: Farbe.akzent, hoehe: 7)
 
-                    if !winzig {
-                        HStack(spacing: 0) {
-                            Zahl(wert: k.games_played ?? 0, wort: L("SPIELE", "GAMES"), lage: .leading)
-                            Zahl(wert: k.wins ?? 0, wort: L("SIEGE", "WINS"), lage: .center)
-                            Zahl(wert: k.highscore ?? 0, wort: L("BESTE", "BEST"), lage: .trailing)
-                        }
+                    HStack(spacing: 0) {
+                        Zahl(wert: k.games_played ?? 0, wort: L("SPIELE", "GAMES"), lage: .leading)
+                        Zahl(wert: k.wins ?? 0, wort: L("SIEGE", "WINS"), lage: .center)
+                        Zahl(wert: k.highscore ?? 0, wort: L("BESTE", "BEST"), lage: .trailing)
                     }
                 }
             }
