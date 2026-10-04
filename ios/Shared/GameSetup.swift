@@ -156,8 +156,11 @@ struct Leaderboard: Decodable {
         let name: String
         let amount: Int
         let pro: Bool
+        let admin: Bool
+        /// Relative to the site ("/fakester/avatars/u1.webp?v=…") or absolute.
+        let avatarPath: String?
 
-        private enum CodingKeys: String, CodingKey { case id, rank, username, value, is_pro }
+        private enum CodingKeys: String, CodingKey { case id, rank, username, value, is_pro, is_admin, avatar_url }
         init(from d: Decoder) throws {
             let c = try d.container(keyedBy: CodingKeys.self)
             id = try c.decode(LooseValue.self, forKey: .id).text
@@ -165,6 +168,15 @@ struct Leaderboard: Decodable {
             name = (try? c.decode(String.self, forKey: .username)) ?? ""
             amount = (try? c.decode(LooseValue.self, forKey: .value))?.numeric ?? 0
             pro = (try? c.decode(Bool.self, forKey: .is_pro)) ?? false
+            admin = (try? c.decode(Bool.self, forKey: .is_admin)) ?? false
+            avatarPath = try? c.decode(String.self, forKey: .avatar_url)
+        }
+
+        /// Full URL of the profile picture, if the player has one.
+        var avatarURL: URL? {
+            guard let p = avatarPath, !p.isEmpty else { return nil }
+            if p.hasPrefix("http://") || p.hasPrefix("https://") { return URL(string: p) }
+            return URL(string: "https://fakester.app" + (p.hasPrefix("/") ? p : "/" + p))
         }
     }
 

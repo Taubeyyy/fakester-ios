@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Quests wie im Browser: Reiter Daily / Weekly / Milestones, je Quest eine
-/// Karte mit Fortschrittsbalken und rechts entweder die Belohnung (noch offen),
-/// der Abholknopf (geschafft) oder "Abgeholt". Nur mit Konto.
+/// Quests as in the browser: Daily / Weekly / Milestones tabs, one card per
+/// quest with a progress bar and, on the right, either the reward (still open),
+/// the claim button (completed) or "Claimed". Account only.
 struct QuestsView: View {
     @EnvironmentObject private var api: Api
     @Environment(\.dismiss) private var close
@@ -253,9 +253,9 @@ private struct QuestCard: View {
     }
 }
 
-// MARK: - Taegliche Belohnung
+// MARK: - Daily reward
 
-/// Erscheint beim Oeffnen, wenn es heute etwas abzuholen gibt - wie im Browser.
+/// Shown on launch when there is something to collect today - as in the browser.
 struct DailyBonusSheet: View {
     @EnvironmentObject private var api: Api
     @Environment(\.dismiss) private var close
