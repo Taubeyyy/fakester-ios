@@ -14,11 +14,11 @@ struct LobbyAnsicht: View {
                     if let e = spiel.einstellungen {
                         Karte {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("EINSTELLUNGEN").etikett()
+                                Text(L("EINSTELLUNGEN", "SETTINGS")).etikett()
                                 Zeile("Songs", "\(e.songCount)")
-                                Zeile("Zeit", "\(e.guessTime)s")
-                                Zeile("Antwort", e.istMC ? "Multiple Choice" : "Eintippen")
-                                Zeile("Geraten wird", e.guessTypes.map(Benennung.rateArt).joined(separator: ", "))
+                                Zeile(L("Zeit", "Time"), "\(e.guessTime)s")
+                                Zeile(L("Antwort", "Answer"), e.istMC ? "Multiple Choice" : L("Eintippen", "Type in"))
+                                Zeile(L("Geraten wird", "Guessing"), e.guessTypes.map(Benennung.rateArt).joined(separator: ", "))
                                 if let p = e.playlistName { Zeile("Playlist", p) }
                             }
                         }
@@ -26,7 +26,7 @@ struct LobbyAnsicht: View {
 
                     Karte {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("SPIELER (\(spiel.spieler.count))").etikett()
+                            Text(L("SPIELER (\(spiel.spieler.count))", "PLAYERS (\(spiel.spieler.count))")).etikett()
                             ForEach(spiel.spieler) { s in
                                 SpielerZeile(spieler: s,
                                              istHost: s.id.text == spiel.hostId,
@@ -55,13 +55,13 @@ struct LobbyAnsicht: View {
 
             VStack(spacing: 10) {
                 if spiel.binIchHost {
-                    Button("Spiel starten") {
+                    Button(L("Spiel starten", "Start game")) {
                         Spuerbar.sperren()
                         spiel.starten()
                     }
                     .buttonStyle(Hauptknopf())
                 } else {
-                    Text("Warten auf den Gastgeber…")
+                    Text(L("Warten auf den Gastgeber…", "Waiting for the host…"))
                         .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundColor(Farbe.gedaempft)
                         .frame(height: 54)
@@ -74,7 +74,7 @@ struct LobbyAnsicht: View {
 
     private var untertitel: String {
         let modus = Benennung.spielart(spiel.spielart)
-        return spiel.binIchHost ? "\(modus) · du bist Gastgeber" : modus
+        return spiel.binIchHost ? L("\(modus) · du bist Gastgeber", "\(modus) · you're the host") : modus
     }
 
     @ViewBuilder
@@ -112,8 +112,8 @@ struct SpielerZeile: View {
 
             if istHost { Abzeichen("HOST", Farbe.akzent) }
             if spieler.isBot { Abzeichen("BOT", Farbe.kante) }
-            if !spieler.isConnected { Abzeichen("WEG", Farbe.schlecht) }
-            if spieler.watchOnly { Abzeichen("SCHAUT ZU", Farbe.kante) }
+            if !spieler.isConnected { Abzeichen(L("WEG", "AWAY"), Farbe.schlecht) }
+            if spieler.watchOnly { Abzeichen(L("SCHAUT ZU", "WATCHING"), Farbe.kante) }
 
             Spacer(minLength: 4)
 
@@ -188,7 +188,7 @@ struct LadeAnsicht: View {
                     .id(z)
             } else {
                 ProgressView().tint(Farbe.akzent).scaleEffect(1.3)
-                Text(spiel.ladetext.isEmpty ? "Songs werden geladen…" : spiel.ladetext)
+                Text(spiel.ladetext.isEmpty ? L("Songs werden geladen…", "Loading songs…") : spiel.ladetext)
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .foregroundColor(Farbe.schrift)
 
@@ -197,7 +197,7 @@ struct LadeAnsicht: View {
                         ProgressView(value: Double(l.checked), total: Double(l.total))
                             .tint(Farbe.akzent)
                             .frame(width: 220)
-                        Text("\(l.playable) spielbar von \(l.checked) geprueft")
+                        Text(L("\(l.playable) spielbar von \(l.checked) geprüft", "\(l.playable) playable of \(l.checked) checked"))
                             .font(.system(size: 12, design: .rounded))
                             .foregroundColor(Farbe.gedaempft)
                             .monospacedDigit()
@@ -212,9 +212,9 @@ struct LadeAnsicht: View {
 enum Benennung {
     static func rateArt(_ k: String) -> String {
         switch k {
-        case "title":  return "Titel"
-        case "artist": return "Interpret"
-        case "year":   return "Jahr"
+        case "title":  return L("Titel", "Title")
+        case "artist": return L("Interpret", "Artist")
+        case "year":   return L("Jahr", "Year")
         default:       return k
         }
     }

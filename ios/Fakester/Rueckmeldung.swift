@@ -40,7 +40,7 @@ enum Rueckmeldung {
         let status = (antwort as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
             let fehler = try? JSONDecoder().decode(Antwort.self, from: daten)
-            throw Fehler(text: fehler?.error ?? "Ging gerade nicht (\(status)).")
+            throw Fehler(text: fehler?.error ?? L("Ging gerade nicht (\(status)).", "Didn't work right now (\(status))."))
         }
     }
 }
@@ -58,7 +58,8 @@ struct RueckmeldungsBlatt: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Was ist kaputt, was fehlt, was nervt? Kurz reicht.")
+                Text(L("Was ist kaputt, was fehlt, was nervt? Kurz reicht.",
+                       "What's broken, what's missing, what's annoying? Short is fine."))
                     .font(.system(size: 14, design: .rounded))
                     .foregroundColor(Farbe.gedaempft)
 
@@ -78,14 +79,15 @@ struct RueckmeldungsBlatt: View {
                         .foregroundColor(Farbe.schlecht)
                 }
 
-                Button(fertig ? "Danke!" : (sendet ? "Sendet…" : "Abschicken")) {
+                Button(fertig ? L("Danke!", "Thanks!") : (sendet ? L("Sendet…", "Sending…") : L("Abschicken", "Send"))) {
                     Task { await abschicken() }
                 }
                 .buttonStyle(Hauptknopf(farbe: fertig ? Farbe.gut : Farbe.akzent,
                                         aus: text.trimmingCharacters(in: .whitespacesAndNewlines).count < 3 || sendet))
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).count < 3 || sendet || fertig)
 
-                Text("Geht direkt an den Entwickler. Ohne Namen, nur mit Bildschirm und App-Version.")
+                Text(L("Geht direkt an den Entwickler. Ohne Namen, nur mit Bildschirm und App-Version.",
+                       "Goes straight to the developer. No name, just the screen and app version."))
                     .font(.system(size: 12, design: .rounded))
                     .foregroundColor(Farbe.gedaempft)
                 Spacer()
@@ -95,7 +97,7 @@ struct RueckmeldungsBlatt: View {
             .navigationTitle("Feedback")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { schliessen() } }
+                ToolbarItem(placement: .cancellationAction) { Button(L("Abbrechen", "Cancel")) { schliessen() } }
             }
             .onAppear { fokus = true }
         }

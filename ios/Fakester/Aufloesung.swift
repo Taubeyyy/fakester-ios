@@ -6,7 +6,7 @@ struct AufloesungAnsicht: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Kopfzeile(titel: "Aufloesung", unterzeile: nil) { spiel.verlassen() }
+            Kopfzeile(titel: L("Auflösung", "Reveal"), unterzeile: nil) { spiel.verlassen() }
 
             ScrollView {
                 VStack(spacing: 16) {
@@ -37,7 +37,7 @@ struct AufloesungAnsicht: View {
                         Karte {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("SNEAKY MODE").etikett()
-                                Text("Der Song bleibt diesmal verdeckt.")
+                                Text(L("Der Song bleibt diesmal verdeckt.", "The song stays hidden this time."))
                                     .font(.system(size: 14, design: .rounded))
                                     .foregroundColor(Farbe.schrift)
                             }
@@ -48,7 +48,7 @@ struct AufloesungAnsicht: View {
                         Karte {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
-                                    Text("DEINE RUNDE").etikett()
+                                    Text(L("DEINE RUNDE", "YOUR ROUND")).etikett()
                                     Spacer()
                                     Text("+\(blatt.total)")
                                         .font(.system(size: 14, weight: .heavy, design: .rounded))
@@ -73,7 +73,7 @@ struct AufloesungAnsicht: View {
                                         if eintrag.wert.points == 0,
                                            let eigene = blatt.ownAnswer?[eintrag.schluessel]?.text,
                                            !eigene.isEmpty {
-                                            Text("du: \(eigene)")
+                                            Text(L("du: \(eigene)", "you: \(eigene)"))
                                                 .font(.system(size: 12, design: .rounded))
                                                 .foregroundColor(Farbe.schlecht.opacity(0.9))
                                         }
@@ -85,7 +85,7 @@ struct AufloesungAnsicht: View {
 
                     Karte {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("STAND").etikett()
+                            Text(L("STAND", "STANDINGS")).etikett()
                             ForEach(spiel.spieler) { s in
                                 SpielerZeile(spieler: s,
                                              istHost: s.id.text == spiel.hostId,
@@ -99,7 +99,7 @@ struct AufloesungAnsicht: View {
                 .padding(.bottom, 24)
             }
 
-            Text("Gleich geht es weiter…")
+            Text(L("Gleich geht es weiter…", "Next round coming up…"))
                 .font(.system(size: 13, weight: .medium, design: .rounded))
                 .foregroundColor(Farbe.gedaempft)
                 .padding(.bottom, 16)
@@ -119,7 +119,7 @@ struct EndeAnsicht: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Kopfzeile(titel: "Endstand", unterzeile: nil) { spiel.verlassen() }
+            Kopfzeile(titel: L("Endstand", "Final standings"), unterzeile: nil) { spiel.verlassen() }
 
             ScrollView {
                 VStack(spacing: 16) {
@@ -137,7 +137,8 @@ struct EndeAnsicht: View {
                                         .font(.system(size: 16, weight: .bold, design: .rounded))
                                         .foregroundColor(Farbe.schrift)
                                         .lineLimit(1)
-                                    Text("\(s.correctAnswers) richtig · laengste Serie \(s.bestStreak)")
+                                    Text(L("\(s.correctAnswers) richtig · längste Serie \(s.bestStreak)",
+                                           "\(s.correctAnswers) correct · best streak \(s.bestStreak)"))
                                         .font(.system(size: 12, design: .rounded))
                                         .foregroundColor(Farbe.gedaempft)
                                     if let b = s.rewards, b.xp > 0 || b.spots > 0 || b.goldSpots > 0 {
@@ -160,7 +161,7 @@ struct EndeAnsicht: View {
                     if let lieder = spiel.endstand?.songs, !lieder.isEmpty {
                         Karte {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("GESPIELT").etikett()
+                                Text(L("GESPIELT", "PLAYED")).etikett()
                                 ForEach(Array(lieder.enumerated()), id: \.offset) { _, t in
                                     VStack(alignment: .leading, spacing: 1) {
                                         Text(t.title)
@@ -183,13 +184,13 @@ struct EndeAnsicht: View {
             }
 
             VStack(spacing: 10) {
-                Button("Zurueck in die Lobby") {
+                Button(L("Zurück in die Lobby", "Back to lobby")) {
                     Spuerbar.tipp()
                     spiel.zurueckInDieLobby()
                 }
                 .buttonStyle(Hauptknopf())
 
-                Button("Verlassen") { spiel.verlassen() }
+                Button(L("Verlassen", "Leave")) { spiel.verlassen() }
                     .buttonStyle(Nebenknopf())
             }
             .padding(.horizontal, 20)

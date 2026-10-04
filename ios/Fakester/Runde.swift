@@ -37,7 +37,7 @@ struct RundenAnsicht: View {
                     if !spiel.spieler.isEmpty {
                         Karte {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("FERTIG: \(fertig) / \(ratend)").etikett()
+                                Text(L("FERTIG: \(fertig) / \(ratend)", "DONE: \(fertig) / \(ratend)")).etikett()
                                 ForEach(spiel.spieler.filter { !$0.watchOnly }) { s in
                                     SpielerZeile(spieler: s, binIch: s.id.text == spiel.eigeneId)
                                 }
@@ -50,7 +50,7 @@ struct RundenAnsicht: View {
             }
             .scrollDismissesKeyboard(.interactively)
 
-            Button(spiel.abgegeben ? "Antwort aendern" : "Antwort abgeben") {
+            Button(spiel.abgegeben ? L("Antwort ändern", "Change answer") : L("Antwort abgeben", "Submit answer")) {
                 if spiel.abgegeben {
                     Spuerbar.tipp()
                     spiel.nochmalUeberlegen()
@@ -68,8 +68,8 @@ struct RundenAnsicht: View {
     }
 
     private var titel: String {
-        guard let r = spiel.runde else { return "Runde" }
-        return "Runde \(r.round) / \(r.totalRounds)"
+        guard let r = spiel.runde else { return L("Runde", "Round") }
+        return L("Runde \(r.round) / \(r.totalRounds)", "Round \(r.round) / \(r.totalRounds)")
     }
 
     private var vollstaendig: Bool { spiel.antwort.vollstaendig(fuer: spiel.rateArten) }
@@ -154,7 +154,7 @@ struct Plattenteller: View {
             .onAppear { dreht = true }
 
             if spiel.runde?.previewUrl == nil {
-                Text("Für diesen Song gibt es keine Vorschau.")
+                Text(L("Für diesen Song gibt es keine Vorschau.", "No preview for this song."))
                     .font(.system(size: 12, design: .rounded))
                     .foregroundColor(Farbe.gedaempft)
             }

@@ -18,18 +18,18 @@ struct AnmeldeAnsicht: View {
 
                 AktualisierungsKarte()
 
-                Text("Rate den Song, schlag die Runde.")
+                Text(L("Rate den Song, schlag die Runde.", "Guess the song, beat the room."))
                     .font(.system(size: 15, weight: .medium, design: .rounded))
                     .foregroundColor(Farbe.gedaempft)
 
                 Karte {
                     VStack(spacing: 12) {
-                        Text(neuesKonto ? "KONTO ANLEGEN" : "ANMELDEN").etikett()
+                        Text(neuesKonto ? L("KONTO ANLEGEN", "CREATE ACCOUNT") : L("ANMELDEN", "LOG IN")).etikett()
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Feld(text: $name, platzhalter: "Benutzername")
+                        Feld(text: $name, platzhalter: L("Benutzername", "Username"))
                             .textContentType(.username)
-                        Feld(text: $passwort, platzhalter: "Passwort", geheim: true)
+                        Feld(text: $passwort, platzhalter: L("Passwort", "Password"), geheim: true)
                             .textContentType(neuesKonto ? .newPassword : .password)
 
                         if let fehler {
@@ -39,11 +39,12 @@ struct AnmeldeAnsicht: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
-                        Button(neuesKonto ? "Konto anlegen" : "Anmelden") { los() }
+                        Button(neuesKonto ? L("Konto anlegen", "Create account") : L("Anmelden", "Log in")) { los() }
                             .buttonStyle(Hauptknopf(aus: !bereit || laeuft))
                             .disabled(!bereit || laeuft)
 
-                        Button(neuesKonto ? "Ich habe schon ein Konto" : "Noch kein Konto? Anlegen") {
+                        Button(neuesKonto ? L("Ich habe schon ein Konto", "I already have an account")
+                                          : L("Noch kein Konto? Anlegen", "No account yet? Create one")) {
                             withAnimation { neuesKonto.toggle(); fehler = nil }
                         }
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
@@ -53,16 +54,17 @@ struct AnmeldeAnsicht: View {
 
                 Karte {
                     VStack(spacing: 12) {
-                        Text("ODER ALS GAST").etikett()
+                        Text(L("ODER ALS GAST", "OR AS A GUEST")).etikett()
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Spielen geht sofort. XP, Spots und Gegenstaende gehoeren aber zu einem Konto.")
+                        Text(L("Spielen geht sofort. XP, Spots und Gegenstände gehören aber zu einem Konto.",
+                               "Play right away. XP, Spots and items need an account, though."))
                             .font(.system(size: 13, design: .rounded))
                             .foregroundColor(Farbe.gedaempft)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Feld(text: $gastname, platzhalter: "Dein Name")
+                        Feld(text: $gastname, platzhalter: L("Dein Name", "Your name"))
 
-                        Button("Als Gast spielen") {
+                        Button(L("Als Gast spielen", "Play as guest")) {
                             api.alsGast(name: gastname)
                             Spuerbar.tipp()
                         }
@@ -71,6 +73,10 @@ struct AnmeldeAnsicht: View {
                         .opacity(gastname.trimmingCharacters(in: .whitespaces).count < 2 ? 0.5 : 1)
                     }
                 }
+
+                SprachKnopf()
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundColor(Farbe.gedaempft)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
@@ -155,7 +161,7 @@ struct DaheimAnsicht: View {
                             .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundColor(Farbe.schrift)
                         if a.isGuest {
-                            Text("GAST")
+                            Text(L("GAST", "GUEST"))
                                 .font(.system(size: 10, weight: .heavy, design: .rounded))
                                 .foregroundColor(Farbe.grund)
                                 .padding(.horizontal, 7).padding(.vertical, 3)
@@ -166,9 +172,9 @@ struct DaheimAnsicht: View {
 
                 Karte {
                     VStack(spacing: 12) {
-                        Text("LOBBY BEITRETEN").etikett()
+                        Text(L("LOBBY BEITRETEN", "JOIN LOBBY")).etikett()
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("Die PIN steht beim Gastgeber im Spiel.")
+                        Text(L("Die PIN steht beim Gastgeber im Spiel.", "The host can see the PIN in their game."))
                             .font(.system(size: 13, design: .rounded))
                             .foregroundColor(Farbe.gedaempft)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -176,7 +182,7 @@ struct DaheimAnsicht: View {
                         Feld(text: $pin, platzhalter: "PIN", nurZiffern: true)
                             .font(.system(size: 22, weight: .black, design: .rounded))
 
-                        Button("Beitreten") {
+                        Button(L("Beitreten", "Join")) {
                             guard let a = api.ausweis else { return }
                             Spuerbar.tipp()
                             spiel.betreten(pin: pin, als: a)
@@ -188,8 +194,9 @@ struct DaheimAnsicht: View {
 
                 Karte {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("NOCH NICHT DRIN").etikett()
-                        Text("Eine eigene Lobby aufmachen, Timeline, Higher/Lower, Shop und Quests gibt es bisher nur im Browser. Kommt hier nach und nach dazu.")
+                        Text(L("NOCH NICHT DRIN", "NOT IN YET")).etikett()
+                        Text(L("Eine eigene Lobby aufmachen, Timeline, Higher/Lower, Shop und Quests gibt es bisher nur im Browser. Kommt hier nach und nach dazu.",
+                               "Hosting your own lobby, Timeline, Higher/Lower, Shop and Quests are browser-only for now. They'll come to the app step by step."))
                             .font(.system(size: 13, design: .rounded))
                             .foregroundColor(Farbe.gedaempft)
                             .fixedSize(horizontal: false, vertical: true)
@@ -200,13 +207,14 @@ struct DaheimAnsicht: View {
                     Button("Feedback") {
                         NotificationCenter.default.post(name: .geschuettelt, object: nil)
                     }
-                    Button(api.angemeldet ? "Abmelden" : "Anderer Name") {
+                    Button(api.angemeldet ? L("Abmelden", "Log out") : L("Anderer Name", "Change name")) {
                         api.abmelden()
                     }
+                    SprachKnopf()
                 }
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .foregroundColor(Farbe.gedaempft)
-                Text("Tipp: Handy schütteln schickt auch Feedback.")
+                Text(L("Tipp: Handy schütteln schickt auch Feedback.", "Tip: shake your phone to send feedback too."))
                     .font(.system(size: 11, design: .rounded))
                     .foregroundColor(Farbe.gedaempft.opacity(0.7))
             }

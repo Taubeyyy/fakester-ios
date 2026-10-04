@@ -63,8 +63,8 @@ struct AktualisierungsKarte: View {
         if let neu = aktualisierung.neu {
             Karte {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("NEUE VERSION").etikett()
-                    Text("Build \(neu.build) ist da")
+                    Text(L("NEUE VERSION", "NEW VERSION")).etikett()
+                    Text(L("Build \(neu.build) ist da", "Build \(neu.build) is out"))
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundColor(Farbe.schrift)
                     if !neu.text.isEmpty {
@@ -73,7 +73,7 @@ struct AktualisierungsKarte: View {
                             .foregroundColor(Farbe.gedaempft)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    Button("Installieren") {
+                    Button(L("Installieren", "Install")) {
                         Spuerbar.tipp()
                         aktualisierung.installieren()
                     }

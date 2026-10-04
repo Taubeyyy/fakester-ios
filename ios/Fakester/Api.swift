@@ -114,7 +114,7 @@ final class Api: ObservableObject {
             koerper: ["username": name.trimmingCharacters(in: .whitespaces), "password": passwort],
             mitToken: false)
         guard let t = antwort.token, let u = antwort.user else {
-            throw Fehler.meldung("Der Server hat keine Anmeldung zurueckgeschickt.")
+            throw Fehler.meldung(L("Der Server hat keine Anmeldung zurückgeschickt.", "The server didn't send back a login."))
         }
         token = t
         ich = u
@@ -176,7 +176,7 @@ final class Api: ObservableObject {
         do {
             (daten, antwort) = try await URLSession.shared.data(for: anfrage)
         } catch {
-            throw Fehler.meldung("Keine Verbindung zum Server.")
+            throw Fehler.meldung(L("Keine Verbindung zum Server.", "No connection to the server."))
         }
 
         let code = (antwort as? HTTPURLResponse)?.statusCode ?? 0
@@ -185,12 +185,12 @@ final class Api: ObservableObject {
             // brauchbarer als ein Statuscode ("Wrong login details", der
             // Bann-Text mitsamt Restzeit).
             let grund = (try? JSONDecoder().decode(Absage.self, from: daten))?.error
-            throw Fehler.meldung(grund ?? "Der Server hat abgelehnt (\(code)).")
+            throw Fehler.meldung(grund ?? L("Der Server hat abgelehnt (\(code)).", "The server refused (\(code))."))
         }
         do {
             return try JSONDecoder().decode(T.self, from: daten)
         } catch {
-            throw Fehler.meldung("Antwort des Servers nicht lesbar.")
+            throw Fehler.meldung(L("Antwort des Servers nicht lesbar.", "Couldn't read the server's response."))
         }
     }
 }
