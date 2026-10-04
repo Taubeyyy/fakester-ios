@@ -23,6 +23,12 @@ final class AudioPlayer: ObservableObject {
         return min(1, max(0, elapsed / length))
     }
 
+    /// 0...1, set by the volume slider in the round. Applies to the clip that
+    /// is playing and to every clip started later.
+    var volume: Float = 1 {
+        didSet { player?.volume = volume }
+    }
+
     private var player: AVPlayer?
     private var previous: String?
     private var timeObserver: Any?
@@ -47,6 +53,7 @@ final class AudioPlayer: ObservableObject {
 
         let p = AVPlayer(url: url)
         p.automaticallyWaitsToMinimizeStalling = false   // rather instant than cleanly buffered
+        p.volume = volume
         player = p
         elapsed = 0
         length = 0
