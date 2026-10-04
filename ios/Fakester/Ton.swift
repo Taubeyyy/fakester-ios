@@ -47,6 +47,7 @@ final class Ton: ObservableObject {
 
         let p = AVPlayer(url: url)
         p.automaticallyWaitsToMinimizeStalling = false   // lieber sofort als sauber gepuffert
+        p.volume = Vorgabe.lautstaerkeWert
         spieler = p
         stelle = 0
         dauer = 0
@@ -74,6 +75,11 @@ final class Ton: ObservableObject {
         else { p.play(); laeuft = true }
     }
 
+    /// Aus den Einstellungen - wirkt sofort, auch mitten im Song.
+    func lautstaerkeSetzen(_ wert: Float) {
+        spieler?.volume = max(0, min(1, wert))
+    }
+
     func stoppen() {
         abraeumen()
         spieler = nil
@@ -91,17 +97,22 @@ final class Ton: ObservableObject {
 
 /// Kurze Rueckmeldung in die Hand. Auf einer Webseite gibt es das nicht, und
 /// genau solche Kleinigkeiten machen den Unterschied zwischen App und Lesezeichen.
+/// In den Einstellungen abschaltbar.
 enum Spuerbar {
     static func tipp() {
+        guard Vorgabe.vibrationAn else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
     static func sperren() {
+        guard Vorgabe.vibrationAn else { return }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
     static func richtig() {
+        guard Vorgabe.vibrationAn else { return }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
     static func falsch() {
+        guard Vorgabe.vibrationAn else { return }
         UINotificationFeedbackGenerator().notificationOccurred(.error)
     }
 }

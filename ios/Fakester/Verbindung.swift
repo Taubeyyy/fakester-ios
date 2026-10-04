@@ -70,6 +70,11 @@ final class Spiel: NSObject, ObservableObject {
     private var klopfer: Timer?
     private var uhr: Timer?
     private var rundenEnde: Date?
+    /// Schon einmal wirklich in der Lobby angekommen? Erst dann lohnt es sich,
+    /// nach einem Abriss endlos neu zu verbinden - vorher heisst "kommt nicht
+    /// rein" fast immer: falsche PIN oder kein Netz.
+    private var warDrin = false
+    private var beitrittsNummer = 0
 
     // MARK: - Tuer auf
 
@@ -79,11 +84,49 @@ final class Spiel: NSObject, ObservableObject {
         self.eigeneId = wer.id
         self.willVerbunden = true
         self.versuche = 0
+        self.warDrin = false
         verbinden()
+        beitrittUeberwachen()
+    }
+
+    /// Kommt nach 12 Sekunden keine Antwort aus der Lobby, wird abgebrochen
+    /// statt ewig "Verbinde…" zu zeigen.
+    private func beitrittUeberwachen() {
+        beitrittsNummer += 1
+        let nummer = beitrittsNummer
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 12_000_000_000)
+            guard nummer == self.beitrittsNummer, self.willVerbunden, !self.warDrin else { return }
+            self.beitrittAbbrechen(L("Keine Antwort von der Lobby. Stimmt die PIN?",
+                                     "No answer from the lobby. Is the PIN right?"))
+        }
+    }
+
+    /// Zurueck auf den Startbildschirm, mit Grund.
+    private func beitrittAbbrechen(_ grund: String) {
+        willVerbunden = false
+        beitrittsNummer += 1
+        abbauen()
+        lage = .getrennt
+        pin = ""
+        Spuerbar.falsch()
+        meldung = grund
+    }
+
+    /// Die Fehler des Servers sind englisch und knapp; die haeufigen uebersetzen.
+    private func beitrittsFehler(_ text: String) -> String {
+        let t = text.lowercased()
+        if t.contains("not found") { return L("Diese PIN gibt es nicht.", "There's no game with this PIN.") }
+        if t.contains("full") { return L("Die Lobby ist voll.", "The lobby is full.") }
+        if t.contains("started") || t.contains("progress") {
+            return L("Das Spiel läuft schon.", "The game has already started.")
+        }
+        return text
     }
 
     func verlassen() {
         willVerbunden = false
+        beitrittsNummer += 1
         schick("leave-game", [:])
         abbauen()
         lage = .getrennt
@@ -130,6 +173,11 @@ final class Spiel: NSObject, ObservableObject {
     private func spaeterNochmal() {
         guard willVerbunden else { return }
         versuche += 1
+        if !warDrin && versuche >= 4 {
+            beitrittAbbrechen(L("Keine Verbindung zum Spiel. Bist du online?",
+                                "Can't reach the game. Are you online?"))
+            return
+        }
         let wartezeit = min(8.0, pow(1.6, Double(min(versuche, 6))))
         lage = .verbinde
         Task { @MainActor in
@@ -236,6 +284,7 @@ final class Spiel: NSObject, ObservableObject {
 
         case "lobby-update":
             guard let p = lies(LobbyUpdate.self) else { return }
+            warDrin = true
             spieler = p.players
             hostId = p.hostId?.text
             einstellungen = p.settings ?? einstellungen
@@ -254,6 +303,7 @@ final class Spiel: NSObject, ObservableObject {
 
         case "state-sync":
             guard let p = lies(Zustandsabgleich.self) else { return }
+            warDrin = true
             spieler = p.scores
             if let m = p.gameMode { spielart = m }
             switch p.gameState {
@@ -313,7 +363,15 @@ final class Spiel: NSObject, ObservableObject {
             }
 
         case "toast":
-            if let h = lies(Hinweis.self), !h.message.isEmpty { meldung = h.message }
+            guard let h = lies(Hinweis.self), !h.message.isEmpty else { return }
+            // Noch nicht drin und der Server meldet einen Fehler ("Game not
+            // found!") - dann wird das nichts mehr. Frueher blieb die App hier
+            // fuer immer bei "Verbinde…" haengen.
+            if h.isError && !warDrin && lage == .verbinde {
+                beitrittAbbrechen(beitrittsFehler(h.message))
+            } else {
+                meldung = h.message
+            }
 
         case "kicked":
             rauswurf = lies(Rauswurf.self)

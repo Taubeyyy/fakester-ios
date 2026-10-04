@@ -60,7 +60,7 @@ struct Wurzel: View {
         case .getrennt:
             if api.ausweis == nil { AnmeldeAnsicht() } else { DaheimAnsicht() }
         case .verbinde:
-            Warten(text: L("Verbinde…", "Connecting…"))
+            Warten(text: L("Verbinde…", "Connecting…"), abbrechen: { spiel.verlassen() })
         case .lobby:
             LobbyAnsicht()
         case .laedt:
@@ -86,12 +86,20 @@ struct Wurzel: View {
 
 struct Warten: View {
     let text: String
+    var abbrechen: (() -> Void)? = nil
+
     var body: some View {
         VStack(spacing: 14) {
             ProgressView().tint(Farbe.akzent)
             Text(text)
                 .font(.marke(15, .medium))
                 .foregroundColor(Farbe.gedaempft)
+            if let abbrechen {
+                Button(L("Abbrechen", "Cancel"), action: abbrechen)
+                    .font(.marke(13, .bold))
+                    .foregroundColor(Farbe.leise)
+                    .padding(.top, 10)
+            }
         }
     }
 }
