@@ -17,6 +17,10 @@ struct DaheimAnsicht: View {
     @State private var beitreten = false
     @State private var erstellen = false
     @State private var rangliste = false
+    @State private var quests = false
+    @State private var gastSperre = false
+    @State private var tagesBonus: TagesBonus?
+    @State private var live: LiveZahlen?
 
     var body: some View {
         // Der Startbildschirm passt im Browser auf einen Bildschirm, und genau
@@ -35,7 +39,8 @@ struct DaheimAnsicht: View {
                     held(eng: eng)
                     spielknoepfe
                     if beitreten { pinKarte.transition(.opacity.combined(with: .move(edge: .top))) }
-                    DailyKarte(eng: eng) { nurImBrowser("Daily") }
+                    OnlineZeile(live: live)
+                    DailyKarte(eng: eng) { ziel("daily", "Daily") }
                     kacheln(eng: eng)
                     ruhigeKnoepfe(eng: eng)
                     StufenKarte(eng: eng)
@@ -58,6 +63,59 @@ struct DaheimAnsicht: View {
             RanglistenAnsicht()
                 .environmentObject(api)
                 .preferredColorScheme(.dark)
+        }
+        .fullScreenCover(isPresented: $quests) {
+            QuestAnsicht()
+                .environmentObject(api)
+                .preferredColorScheme(.dark)
+        }
+        .sheet(item: $tagesBonus) { b in
+            TagesBonusBlatt(bonus: b)
+                .environmentObject(api)
+                .preferredColorScheme(.dark)
+        }
+        // Wortgleich mit dem Browser ("Guest mode").
+        .alert(L("Dafür brauchst du ein Konto", "That one needs an account"), isPresented: $gastSperre) {
+            Button(L("Konto erstellen", "Create an account")) { api.abmelden() }
+            Button(L("Später", "Not now"), role: .cancel) {}
+        } message: {
+            Text(L("Gäste können alles spielen – jeden Modus, jede Lobby und die Rangliste.\n\nXP, Spots, Gegenstände und Freunde gehören zu einem Konto, deshalb liegen sie hinter einer Anmeldung.",
+                   "Guests can play everything — every mode, every lobby, and the leaderboard.\n\nXP, Spots, items and friends belong to an account, so they sit behind a sign-up."))
+        }
+        .task { await tagesBonusPruefen() }
+        .task {
+            // Wie der Browser: alle 30 Sekunden frisch.
+            while !Task.isCancelled {
+                if let z: LiveZahlen = try? await api.holen("/stats/live") { live = z }
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+            }
+        }
+    }
+
+    /// Wohin eine Kachel fuehrt. Gaeste sehen - wie im Browser - ueberall ausser
+    /// bei der Rangliste den Konto-Hinweis.
+    private func ziel(_ id: String, _ name: String) {
+        Spuerbar.tipp()
+        if id == "board" {
+            rangliste = true
+            return
+        }
+        guard api.angemeldet else {
+            gastSperre = true
+            return
+        }
+        if id == "quests" {
+            quests = true
+        } else {
+            nurImBrowser(name)
+        }
+    }
+
+    @MainActor
+    private func tagesBonusPruefen() async {
+        guard api.angemeldet, tagesBonus == nil else { return }
+        if let b: TagesBonus = try? await api.holen("/daily-checkin"), b.abholbar {
+            tagesBonus = b
         }
     }
 
@@ -133,7 +191,7 @@ struct DaheimAnsicht: View {
         let spalten: [GridItem] = Array(repeating: GridItem(.flexible(), spacing: 9), count: 4)
         return LazyVGrid(columns: spalten, spacing: 9) {
             ForEach(Kachel.alle) { k in
-                KachelKnopf(kachel: k, eng: eng) { nurImBrowser(k.name) }
+                KachelKnopf(kachel: k, eng: eng) { ziel(k.id, k.name) }
             }
         }
     }
@@ -142,14 +200,7 @@ struct DaheimAnsicht: View {
         let spalten: [GridItem] = [GridItem(.flexible(), spacing: 9), GridItem(.flexible(), spacing: 9)]
         return LazyVGrid(columns: spalten, spacing: 9) {
             ForEach(Kachel.ruhige) { k in
-                FlachKnopf(name: k.name, symbol: k.symbol, eng: eng) {
-                    if k.id == "board" {
-                        Spuerbar.tipp()
-                        rangliste = true
-                    } else {
-                        nurImBrowser(k.name)
-                    }
-                }
+                FlachKnopf(name: k.name, symbol: k.symbol, eng: eng) { ziel(k.id, k.name) }
             }
         }
     }
@@ -431,5 +482,31 @@ struct StufenKarte: View {
             Text(wort).etikett()
         }
         .frame(maxWidth: .infinity, alignment: lage)
+    }
+}
+
+/// `● 3 online | 1 lobbies` unter den Spielknoepfen, wie im Browser. Die Zahl
+/// kommt aus `/stats/live`; bis sie da ist, bleibt die Zeile leer statt eine
+/// erfundene Null zu zeigen.
+struct OnlineZeile: View {
+    let live: LiveZahlen?
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if let z = live {
+                Circle().fill(Farbe.akzent).frame(width: 6, height: 6)
+                    .shadow(color: Farbe.akzent.opacity(0.7), radius: 3)
+                (Text("\(z.players)").foregroundColor(Farbe.schrift).fontWeight(.semibold)
+                 + Text(" online"))
+                if z.lobbies > 0 {
+                    Rectangle().fill(Farbe.linie).frame(width: 1, height: 12)
+                    (Text("\(z.lobbies)").foregroundColor(Farbe.schrift).fontWeight(.semibold)
+                     + Text(L(" Lobbys", " lobbies")))
+                }
+            }
+        }
+        .font(.marke(12, .medium))
+        .foregroundColor(Farbe.leise)
+        .frame(height: 16)
     }
 }

@@ -110,12 +110,15 @@ Schiebt sich als Blatt über die abgeblendete Runde, dauert nur `revealTime` (5 
 
 ## Was es im Browser gibt und in der App nicht
 
-Timeline, Higher/Lower, Survival, Race, Shop, Path, Quests, Style, Friends,
+Timeline, Higher/Lower, Survival, Race, Shop, Path, Style, Friends, Quest-Awards,
 Playlists, Settings, Daily, mehrere Playlists gemischt beim Erstellen,
 Lobby-Einstellungen nachträglich ändern, „Share result" als Bild.
 
 Seit 2026-10-04 in der App: **Create Game** (eine Playlist, nur Quiz-Modus),
 **Board** (Rangliste) und die **Emoji-Reaktionen** in der Runde.
+Danach dazu: **online-Zahl** (`/stats/live`, alle 30 s), **Quests** (Daily/Weekly/Milestones,
+ohne Awards), **tägliche Belohnung** (`/daily-checkin`) und für Gäste der Hinweis
+„That one needs an account" auf allem außer der Rangliste – genau wie im Browser.
 
 ## Nachrichten, die der Browser schickt (aus dem Bundle, 2026-10-04)
 

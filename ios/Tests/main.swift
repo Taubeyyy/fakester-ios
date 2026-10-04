@@ -291,6 +291,32 @@ gleich("Freitext heisst freestyle", last?["answerType"] as? String, "freestyle")
 gleich("Playlist-ID in der Nutzlast", last?["playlistId"] as? String, "3cEYpjA9oz9GiPac4AsH4n")
 pruefe("Nutzlast ist gueltiges JSON", last.map { JSONSerialization.isValidJSONObject($0) } ?? false)
 
+// MARK: - Startbildschirm, Quests, taegliche Belohnung
+
+abschnitt("Live-Zahlen (Mitschnitt) und Konto-Antworten (aus dem Web-Bundle)")
+gleich("online", lies(LiveZahlen.self, #"{"players":7,"lobbies":2}"#)?.players, 7)
+gleich("Lobbys", lies(LiveZahlen.self, #"{"players":0,"lobbies":0}"#)?.lobbies, 0)
+
+let quests = lies(QuestStand.self, #"""
+{"daily":{"d_win1":{"target":1,"progress":0,"done":false,"claimed":false,"reward":40},"d_play3":{"target":3,"progress":3,"done":true,"claimed":false,"reward":30}},
+ "weekly":{"w_play20":{"target":20,"progress":"4","reward":150}},
+ "quests":{"win_1":{"done":true,"claimed":true,"reward":50},"kaputt":7}}
+"""#)
+gleich("taeglich: zwei", quests?.taeglich.count, 2)
+gleich("feste Reihenfolge", quests?.taeglich.first?.id, "d_play3")
+pruefe("fertig, nicht abgeholt", quests?.taeglich.first?.fertig == true && quests?.taeglich.first?.abgeholt == false)
+gleich("Stand als Text", quests?.woechentlich.first?.stand, 4)
+gleich("ohne Ziel und Stand: fertig heisst voll", quests?.meilensteine.first?.stand, 1)
+gleich("kaputter Eintrag faellt raus", quests?.meilensteine.count, 1)
+gleich("Abholung", lies(Abholung.self, #"{"reward":30,"newSpots":530}"#)?.newSpots, 530)
+
+let bonus = lies(TagesBonus.self, #"{"claimable":true,"current":2,"today":{"day":3,"spots":40,"gold":0,"xp":10,"label":null},"ladder":[]}"#)
+pruefe("Bonus abholbar", bonus?.abholbar == true)
+gleich("Bonus Tag", bonus?.tag, 3)
+gleich("Bonus Spots", bonus?.spots, 40)
+gleich("Bonus ohne today", lies(TagesBonus.self, #"{"claimable":false,"current":5}"#)?.tag, 6)
+gleich("Bonus abgeholt", lies(TagesBonusAntwort.self, #"{"claimed":true,"streak":3,"reward":40,"goldReward":0,"xpReward":10}"#)?.serie, 3)
+
 // MARK: -
 
 print("\n\(geprueft) geprueft, \(fehler) fehlgeschlagen")

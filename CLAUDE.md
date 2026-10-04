@@ -46,7 +46,10 @@ ein React-Quelltext existiert nirgends mehr.
   nur `revealTime` (Vorgabe 5 s) – Runde auslaufen lassen und sofort knipsen, sonst ist sie weg.
   Wer keinen Browser hat, baut nur das um, was er belegen kann, und lässt den Rest stehen.
 - Was sich nicht belegen lässt, kommt **nicht** rein. Beispiel: die „online"-Zahl auf dem
-  Startbildschirm – keine Quelle gefunden, also weggelassen statt geraten.
+  Startbildschirm war lange weggelassen, bis die Quelle gefunden war (`GET /stats/live`).
+- Das Web-Bundle (`https://fakester.app/assets/index-*.js`) ist lesbar und zeigt, welche Nachrichten
+  und Felder der Browser benutzt. Was ohne Konto geht, zusätzlich live prüfen (Node + `undici`
+  über den Proxy); Konto-Endpunkte sind nur aus dem Bundle belegt – deshalb besonders nachsichtig decodieren.
 - Der Startbildschirm passt im Browser auf **einen** Bildschirm ohne Wischen. Das ist eine
   Vorgabe, keine Zierde: `DaheimAnsicht` misst die Höhe und rückt bei kleinen Geräten zusammen
   (`eng`). Wer dort etwas hinzufügt, prüft, ob es noch passt.

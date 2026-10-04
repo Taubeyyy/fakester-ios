@@ -196,6 +196,20 @@ final class Api: ObservableObject {
         try await ruf(pfad, methode: "GET", koerper: nil, mitToken: token != nil, abfrage: abfrage)
     }
 
+    /// POST mit Konto (Quests abholen, taegliche Belohnung).
+    func senden<T: Decodable>(_ pfad: String, _ koerper: [String: String] = [:]) async throws -> T {
+        try await ruf(pfad, methode: "POST", koerper: koerper, mitToken: true)
+    }
+
+    /// Nach dem Abholen schickt der Server den neuen Spots-Stand mit - der soll
+    /// sofort oben rechts stehen, nicht erst nach dem naechsten Profilabruf.
+    func spotsSetzen(_ neu: Int) {
+        guard var k = ich else { return }
+        k.spots = neu
+        ich = k
+        ablage.set(try? JSONEncoder().encode(k), forKey: "api.ich")
+    }
+
     // MARK: - Unterbau
 
     private func ruf<T: Decodable>(_ pfad: String, methode: String,
