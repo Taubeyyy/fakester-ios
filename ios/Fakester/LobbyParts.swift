@@ -1,20 +1,20 @@
 import SwiftUI
 
-/// Eine Kachel im PLAYERS-Raster der Lobby, gemessen an fakester.app (375×812):
-/// 80×113, Ecken 16, Polster 10. Rundes Bild (40), beim Gastgeber das goldene
-/// „Host"-Abzeichen am Bild und „♛ CREATOR" ueber dem Namen; der Name 10 pt
-/// fett in Lila. Die eigene Kachel ist lila hinterlegt und umrandet, die
-/// anderen fast unsichtbar. Wer die Verbindung verloren hat, wird blass.
+/// A tile in the lobby's PLAYERS grid, measured on fakester.app (375×812):
+/// 80×113, corners 16, padding 10. Round picture (40); for the host the gold
+/// "Host" badge on the picture and "♛ CREATOR" above the name; the name 10 pt
+/// bold in purple. Your own tile has a purple fill and outline, the others are
+/// almost invisible. Anyone who lost the connection fades out.
 struct PlayerTile: View {
     let player: Player
     var isHost = false
     var isMe = false
-    /// Hoehe der Rasterzeile - im Browser sind alle Kacheln einer Zeile gleich
-    /// hoch (CSS-Grid streckt sie). 0 = so hoch wie der Inhalt.
+    /// Height of the grid row - in the browser all tiles in a row are equally
+    /// tall (the CSS grid stretches them). 0 = as tall as the content.
     var frameHeight: CGFloat = 0
 
-    /// Die natuerliche Hoehe ohne Streckung, mit denselben Zeilenhoehen wie im
-    /// Browser (Polster 10 + Rand 1, Bild 40, Abstand 6, Name 15 ...).
+    /// The natural height without stretching, with the same line heights as in
+    /// the browser (padding 10 + border 1, picture 40, spacing 6, name 15 ...).
     static func frameHeight(player: Player, isHost: Bool) -> CGFloat {
         var h: CGFloat = 11 + 40 + 6 + 15 + 11
         if isHost { h += 14 }
@@ -65,7 +65,7 @@ struct PlayerTile: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// "Host": 8 pt fett, #07070e auf #f59e0b, am Bild oben rechts (-4/-4).
+    /// "Host": 8 pt bold, #07070e on #f59e0b, at the picture's top right (-4/-4).
     private var hostBadge: some View {
         Text("Host")
             .font(.brand(8, .bold))
@@ -101,7 +101,7 @@ struct PlayerTile: View {
                 .frame(height: 13.5)
                 .padding(.top, 2)
         } else if player.isPro {
-            // PRO-Abzeichen: Krone 11, #fbbf24
+            // PRO badge: crown 11, #fbbf24
             Image(systemName: "crown")
                 .font(.system(size: 9, weight: .bold))
                 .foregroundColor(Palette.gold)
@@ -111,9 +111,9 @@ struct PlayerTile: View {
     }
 }
 
-/// Das runde Spielerbild wie im Browser: weiss 7 % als Grund, darin das
-/// Profilbild - sonst das Spielersymbol in hellem Lila (--acc-pale), und wer
-/// gar kein Symbol hat, bekommt den ersten Buchstaben.
+/// The round player picture as in the browser: white 7 % as the base, inside it
+/// the profile picture - otherwise the player icon in light purple (--acc-pale),
+/// and anyone without an icon gets the first letter of their name.
 struct LobbyAvatar: View {
     let player: Player?
     var name: String = ""
@@ -164,15 +164,15 @@ struct LobbyAvatar: View {
     }
 }
 
-/// Farben, die nur hier vorkommen.
+/// Colors that only appear here.
 private enum PlayerTilePalette {
     /// #f59e0b - "Host", "CREATOR", "RECONNECTING…"
     static let amber = Color(hex: 0xF59E0B)
-    /// --acc-pale zu #b15cff
+    /// --acc-pale for #b15cff
     static let pale = Color(hex: 0xCC95FF)
 }
 
-/// Eine Zeile in Listen (.result-score-row): dunkle Flaeche, Platz, Name, Punkte.
+/// A row in lists (.result-score-row): dark surface, rank, name, points.
 struct PlayerRow: View {
     let player: Player
     var isHost = false
@@ -230,7 +230,7 @@ struct PlayerRow: View {
     }
 }
 
-/// Runder Platz (.result-rank / .end-rank): Platz 1 in Gold.
+/// Round rank badge (.result-rank / .end-rank): first place in gold.
 struct RankCircle: View {
     let standing: Int
     var dimension: CGFloat = 30
@@ -246,8 +246,8 @@ struct RankCircle: View {
     }
 }
 
-/// Oben auf jedem Spielbildschirm (.game-header-top): links wo man ist,
-/// rechts der rote Verlassen-Knopf.
+/// At the top of every game screen (.game-header-top): on the left where you
+/// are, on the right the red leave button.
 struct GameHeader: View {
     let heading: String
     var subtitle: String?
@@ -280,7 +280,7 @@ struct GameHeader: View {
     }
 }
 
-/// .lobby-pin-badge: "PIN 1234" in DM Mono, lila Rand und Ring.
+/// .lobby-pin-badge: "PIN 1234" in DM Mono, purple border and ring.
 struct PinBadge: View {
     let pin: String
 
@@ -303,15 +303,15 @@ struct PinBadge: View {
     }
 }
 
-/// Der Server sucht und prueft die Songs - das dauert, und ohne Anzeige sieht
-/// es aus, als haenge das Spiel.
+/// The server picks and checks the songs - that takes a while, and without
+/// anything on screen it looks as if the game were stuck.
 struct LoadingView: View {
     @EnvironmentObject private var game: Game
 
     var body: some View {
         VStack(spacing: 18) {
             if let z = game.countdownNumber {
-                // .countdown-number: riesig, Lila-Verlauf, leuchtend
+                // .countdown-number: huge, purple gradient, glowing
                 Text("\(z)")
                     .font(.brand(150, .black))
                     .tracking(-7)
@@ -341,11 +341,11 @@ struct LoadingView: View {
     }
 }
 
-/// .timer-wrap / .timer-bar: duenner Balken mit Lila-Verlauf und Schein.
+/// .timer-wrap / .timer-bar: thin bar with a purple gradient and glow.
 struct ProgressBar: View {
     let fraction: Double
     var hue: Color? = nil
-    /// Der Rundenstrich oben ist duenner als der Balken in einer Karte.
+    /// The round line at the top is thinner than the bar inside a card.
     var frameHeight: CGFloat = 6
 
     var body: some View {
