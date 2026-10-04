@@ -21,6 +21,7 @@ struct FakesterApp: App {
 struct Wurzel: View {
     @EnvironmentObject private var api: Api
     @EnvironmentObject private var spiel: Spiel
+    @State private var rueckmeldung = false
 
     var body: some View {
         ZStack {
@@ -54,6 +55,11 @@ struct Wurzel: View {
         }
         .task {
             await api.profilAuffrischen()
+        }
+        // Schuetteln = Feedback an den Entwickler, egal wo
+        .onReceive(NotificationCenter.default.publisher(for: .geschuettelt)) { _ in rueckmeldung = true }
+        .sheet(isPresented: $rueckmeldung) {
+            RueckmeldungsBlatt(bildschirm: "\(spiel.lage)")
         }
     }
 

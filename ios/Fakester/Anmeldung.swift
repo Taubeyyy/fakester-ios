@@ -194,11 +194,19 @@ struct DaheimAnsicht: View {
                     }
                 }
 
-                Button(api.angemeldet ? "Abmelden" : "Anderer Name") {
-                    api.abmelden()
+                HStack(spacing: 24) {
+                    Button("Feedback") {
+                        NotificationCenter.default.post(name: .geschuettelt, object: nil)
+                    }
+                    Button(api.angemeldet ? "Abmelden" : "Anderer Name") {
+                        api.abmelden()
+                    }
                 }
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .foregroundColor(Farbe.gedaempft)
+                Text("Tipp: Handy schütteln schickt auch Feedback.")
+                    .font(.system(size: 11, design: .rounded))
+                    .foregroundColor(Farbe.gedaempft.opacity(0.7))
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
