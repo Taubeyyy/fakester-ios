@@ -31,9 +31,9 @@ struct HomeView: View {
         // In the browser the home screen fits on one screen, and that is how it
         // should feel here: everything important reachable without swiping.
         // So the view measures the height it has and gives up empty space first
-        // (`Density`), on very small phones it also moves closer together,
-        // instead of cutting off at the bottom. The middle can still scroll -
-        // as in the browser, where it is its own scroll area as well.
+        // (`Density`), on very small phones it also moves closer together, and
+        // whatever is still too tall is scaled down (`FitToHeight`) - the home
+        // screen never scrolls.
         ZStack {
             GeometryReader { geo in
                 page(Density.fitting(geo.size, bottomInset: geo.safeAreaInsets.bottom))
@@ -150,13 +150,15 @@ struct HomeView: View {
         VStack(spacing: 0) {
             header(m)
             GeometryReader { inner in
-                ScrollView(.vertical, showsIndicators: false) {
+                // No scrolling: the middle always fits. If it is still taller
+                // than the space (update card, very small phone), it is scaled
+                // down as a whole instead of being cut off.
+                FitToHeight(available: inner.size.height) {
                     middleSection(m)
                         .padding(.horizontal, 20)
                         .padding(.vertical, m.middlePadding)
-                        .frame(width: inner.size.width)
-                        .frame(minHeight: inner.size.height)
                 }
+                .frame(width: inner.size.width, height: inner.size.height)
             }
             footer(m)
         }
@@ -375,6 +377,35 @@ private struct Density {
         let middle: CGFloat = hero + groupSpacing + group + groupSpacing + levelCard
         let footer: CGFloat = footerTop + 36
         return header + middle + footer
+    }
+}
+
+/// Lays its content out at its natural height and, if that is taller than
+/// `available`, scales it down as a whole so it fits exactly - centred, never
+/// scrolling, never cut off.
+private struct FitToHeight<Content: View>: View {
+    let available: CGFloat
+    @ViewBuilder var content: Content
+    @State private var natural: CGFloat = 0
+
+    var body: some View {
+        let factor: CGFloat = (natural > available && natural > 0) ? max(0.5, available / natural) : 1
+        content
+            .fixedSize(horizontal: false, vertical: true)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(key: NaturalHeightKey.self, value: proxy.size.height)
+                }
+            )
+            .onPreferenceChange(NaturalHeightKey.self) { height in natural = height }
+            .scaleEffect(factor, anchor: .center)
+    }
+}
+
+private struct NaturalHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
