@@ -72,6 +72,11 @@ ein React-Quelltext existiert nirgends mehr.
   (echter Mitschnitt einer Runde, nur in Debug) und spielt dann mit `ios/UITests/SmokeTests.swift` ein
   ganzes Spiel als Gast gegen den echten Server durch. Fotos + Testschritte liegen im Artefakt `screenshots`.
 - Jeder grüne Lauf ohne `screenshots` ist ein öffentliches Release – nur starten, wenn es raus soll.
+- **Testkonto `Claude`** (id 80) auf fakester.app, angelegt 2026-10-05, um die Konto-Bildschirme (Shop, Style,
+  Path, Quests, Freunde, Playlists, Einstellungen, Stats, Daily) im Web aufzunehmen und echte Antworten
+  mitzuschneiden. Das Passwort hat Edwin – es gehört **nicht** ins Repo. Mit dem Konto nur lesen oder
+  ausprobieren, nie Freundschaften zu echten Spielern anfragen; das Daily damit nicht spielen (landet auf der
+  öffentlichen Tagesliste).
 
 ## Fallen
 

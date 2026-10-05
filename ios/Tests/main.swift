@@ -347,5 +347,7 @@ if let ls = lobbySettings {
     expect("update: valid JSON", JSONSerialization.isValidJSONObject(update))
 }
 
+checkPublicLobbies()
+
 print("\n\(checkCount) checks, \(failures) failures")
 exit(failures == 0 ? 0 : 1)
