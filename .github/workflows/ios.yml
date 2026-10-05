@@ -40,7 +40,7 @@ jobs:
       - name: Logic tests (protocol)
         run: |
           set -o pipefail
-          { swiftc -O Shared/*.swift Tests/Capture.swift Tests/main.swift -o /tmp/logic && /tmp/logic; } 2>&1 | tee "$RUNNER_TEMP/build.log"
+          { swiftc -O Shared/*.swift Tests/*.swift -o /tmp/logic && /tmp/logic; } 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       - name: Generate Xcode project
         run: xcodegen generate

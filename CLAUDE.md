@@ -5,7 +5,7 @@ Die .ipa ist öffentlich (GitHub-Releases), später App Store. Edwin schreibt De
 
 - **Alles in der App ist Englisch** – Oberfläche, Bezeichner, Kommentare, Commit-Nachrichten. Keine Sprachwahl.
 - `ios/` – XcodeGen (`ios/project.yml`), Target `Fakester`, iOS 16.2, Swift 5. `ios/Shared/` = Protokoll + Logik ohne UI,
-  `ios/Tests/` = Logiktests (`swiftc Shared/*.swift Tests/Capture.swift Tests/main.swift`), laufen im CI vor dem Build.
+  `ios/Tests/` = Logiktests (`swiftc Shared/*.swift Tests/*.swift`; `main.swift` ruft die Prüfungen der anderen Testdateien auf), laufen im CI vor dem Build.
 - Das Spiel selbst (Server + Web auf fakester.app) ist **nicht** in diesem Repo und wird von hier aus **nicht** geändert.
   REST unter `https://fakester.app/fakester`, Spiel per WebSocket `wss://fakester.app/fakester/ws`, Umschlag `{type, payload}`.
 
