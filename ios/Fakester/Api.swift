@@ -201,6 +201,16 @@ final class Api: ObservableObject {
         try await perform(path, method: "POST", jsonBody: jsonBody, withToken: true)
     }
 
+    /// Any account request whose body is more than text (numbers, lists):
+    /// buying, equipping, friends, settings. `method` is "POST", "DELETE" or "PUT".
+    /// Endpoints that answer with nothing useful can be decoded as `Api.Ack`.
+    func call<T: Decodable>(_ path: String, method: String = "POST", body: [String: Any]? = nil) async throws -> T {
+        try await perform(path, method: method, jsonBody: body, withToken: true)
+    }
+
+    /// For answers whose content does not matter - any JSON object decodes.
+    struct Ack: Decodable {}
+
     /// After claiming, the server sends the new spots balance - it should show
     /// top right immediately, not only after the next profile fetch.
     func setSpots(_ latest: Int) {
@@ -213,7 +223,7 @@ final class Api: ObservableObject {
     // MARK: - Plumbing
 
     private func perform<T: Decodable>(_ path: String, method: String,
-                                   jsonBody: [String: String]?, withToken: Bool,
+                                   jsonBody: [String: Any]?, withToken: Bool,
                                    query: [String: String] = [:]) async throws -> T {
         var address: URL = Api.baseURL.appendingPathComponent(path.hasPrefix("/") ? String(path.dropFirst()) : path)
         if !query.isEmpty, var components = URLComponents(url: address, resolvingAgainstBaseURL: false) {
