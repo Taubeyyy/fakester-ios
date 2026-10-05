@@ -4,7 +4,8 @@ import SwiftUI
 /// 80×113, corners 16, padding 10. Round picture (40); for the host the gold
 /// "Host" badge on the picture and "♛ CREATOR" above the name; the name 10 pt
 /// bold in purple. Your own tile has a purple fill and outline, the others are
-/// almost invisible. Anyone who lost the connection fades out.
+/// almost invisible. Anyone who lost the connection fades out. The host sees a
+/// small red × at the top right of every other tile to kick that player.
 struct PlayerTile: View {
     let player: Player
     var isHost = false
@@ -12,6 +13,8 @@ struct PlayerTile: View {
     /// Height of the grid row - in the browser all tiles in a row are equally
     /// tall (the CSS grid stretches them). 0 = as tall as the content.
     var frameHeight: CGFloat = 0
+    /// Host only, on everyone else's tile: removes the player. nil = no button.
+    var onKick: (() -> Void)? = nil
 
     /// The natural height without stretching, with the same line heights as in
     /// the browser (padding 10 + border 1, picture 40, spacing 6, name 15 ...).
@@ -38,7 +41,30 @@ struct PlayerTile: View {
         .frame(maxWidth: .infinity, minHeight: frameHeight, alignment: .top)
         .background(shape.fill(base))
         .overlay(shape.strokeBorder(outline, lineWidth: 1))
+        .overlay(alignment: .topTrailing) { kickButton }
         .opacity(player.isConnected ? 1 : 0.45)
+    }
+
+    /// As in the browser: 20×20, 4 inside the edge at the top right, red 15 %
+    /// (rgba(239,68,68,.15)) with lucide x 9 in #f87171. Its corners are
+    /// rounded-lg (.875rem = 14) - on 20×20 that is a circle. The tap area is
+    /// 32×32 around it; the label names the player.
+    @ViewBuilder
+    private var kickButton: some View {
+        if let kick = onKick {
+            Button(action: kick) {
+                LucideGlyph(icon: .x, size: 9)
+                    .foregroundColor(Palette.bad)
+                    .frame(width: 20, height: 20)
+                    .background(Circle().fill(PlayerTilePalette.kickFill))
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Kick \(player.nickname)"))
+            // centre of the 20 circle 15 from the top and right edge, as in the browser
+            .offset(x: 1, y: -1)
+        }
     }
 
     private var picture: some View {
@@ -170,6 +196,8 @@ private enum PlayerTilePalette {
     static let amber = Color(hex: 0xF59E0B)
     /// --acc-pale for #b15cff
     static let pale = Color(hex: 0xCC95FF)
+    /// The kick button: rgba(239,68,68,.15)
+    static let kickFill = Color(hex: 0xEF4444).opacity(0.15)
 }
 
 /// A row in lists (.result-score-row): dark surface, rank, name, points.

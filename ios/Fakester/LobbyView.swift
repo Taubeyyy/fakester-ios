@@ -9,10 +9,13 @@ import CoreImage.CIFilterBuiltins
 /// open slots, the chat card, and at the bottom "Invite players" + "Start Game".
 /// "Invite" opens a sheet with QR code and link, as in the browser.
 ///
-/// Left out on purpose because the app cannot send them: the host's sliders
-/// button in the header and "Settings" next to "Invite players" (both open the
-/// settings sheet, which saves via update-lobby-settings), the kick buttons on
-/// other players' tiles, and the playlist suggestion for guests.
+/// Only the host sees, as in the browser: the sliders button at the top right
+/// of the header and "Settings" next to "Invite players" (both open
+/// `LobbySettingsSheet`, which saves via update-lobby-settings), and the small
+/// red × on every other player's tile (kick-player).
+///
+/// Left out on purpose because the app cannot send it: the playlist
+/// suggestion for guests.
 ///
 /// The browser shot has no status bar and no home indicator; on an iPhone those
 /// take about 84 pt. So the view measures the height it gets: below 800 pt it
@@ -23,6 +26,8 @@ struct LobbyView: View {
     @EnvironmentObject private var game: Game
     @State private var pinRevealed = false
     @State private var invite = false
+    /// The host's "Lobby settings" sheet is open.
+    @State private var settingsOpen = false
     /// A host with other players in the lobby has to tap twice - as in the browser.
     @State private var leaveWarned = false
     /// The tallest height seen. The keyboard only ever makes the view shorter;
@@ -47,7 +52,7 @@ struct LobbyView: View {
                     .onAppear { rememberHeight(geo.size.height) }
                     .onChange(of: geo.size.height) { latest in rememberHeight(latest) }
             }
-            .blur(radius: invite ? 3 : 0)
+            .blur(radius: (invite || settingsOpen) ? 3 : 0)
 
             if invite {
                 LobbyPalette.scrim
@@ -59,12 +64,27 @@ struct LobbyView: View {
                     .transition(sheetTransition)
                     .zIndex(2)
             }
+
+            if settingsOpen, let current = game.lobbySettings {
+                LobbyPalette.scrim
+                    .ignoresSafeArea()
+                    .onTapGesture { closeSettings() }
+                    .transition(.opacity)
+                    .zIndex(3)
+                settingsSheet(current)
+                    .transition(sheetTransition)
+                    .zIndex(4)
+            }
+        }
+        .onChange(of: game.iAmHost) { stillHost in
+            // whoever is no longer host cannot save any more
+            if !stillHost { settingsOpen = false }
         }
     }
 
     private func mainContent(_ d: LobbyDensity) -> some View {
         VStack(spacing: 0) {
-            LobbyHeaderBar(verticalPadding: d.headerPadding, goBack: { goBack() })
+            LobbyHeaderBar(verticalPadding: d.headerPadding, goBack: { goBack() }, openSettings: settingsAction)
 
             ScrollView(showsIndicators: false) {
                 scrollContent(d)
@@ -190,7 +210,8 @@ struct LobbyView: View {
                 PlayerTile(player: s,
                            isHost: s.id.text == game.hostId,
                            isMe: s.id.text == game.ownId,
-                           frameHeight: rowHeight(ordinal))
+                           frameHeight: rowHeight(ordinal),
+                           onKick: kickAction(for: s))
             }
             ForEach(0..<openSlots, id: \.self) { i in
                 Button {
@@ -200,6 +221,17 @@ struct LobbyView: View {
                 }
                 .buttonStyle(.plain)
             }
+        }
+    }
+
+    /// The host's × on every other tile; nil (no button) for everyone else and
+    /// on your own tile. As in the browser it kicks right away, without asking.
+    private func kickAction(for s: Player) -> (() -> Void)? {
+        guard game.iAmHost, s.id.text != game.ownId else { return nil }
+        let targetId: String = s.id.text
+        return {
+            Haptics.tap()
+            game.kick(targetId)
         }
     }
 
@@ -231,10 +263,16 @@ struct LobbyView: View {
     // MARK: Footer
 
     /// rgba(7,7,14,.95) with a line on top, padding 12/16, spacing 8.
-    /// No "Settings" next to "Invite players": see the type comment.
+    /// The host's "Settings" sits in the same row as "Invite players", so the
+    /// bar is as tall as before (the height budget of `LobbyDensity` holds).
     private func footerBar(_ d: LobbyDensity) -> some View {
         VStack(spacing: 8) {
-            inviteButton
+            HStack(spacing: 8) {
+                inviteButton
+                if settingsAction != nil {
+                    settingsButton
+                }
+            }
             if game.iAmHost {
                 startButton
             } else {
@@ -264,6 +302,29 @@ struct LobbyView: View {
             }
             .foregroundColor(Palette.foreground)
             .frame(maxWidth: .infinity)
+            .frame(height: 42)
+            .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
+            .contentShape(shape)
+        }
+        .buttonStyle(LobbyPressStyle())
+    }
+
+    /// "Settings" (host only): 42 tall, padding 16, outline only, sliders 13,
+    /// 13 pt bold, as wide as its content - "Invite players" takes the rest.
+    private var settingsButton: some View {
+        let shape = RoundedRectangle(cornerRadius: 18, style: .circular)
+        return Button {
+            openSettings()
+        } label: {
+            HStack(spacing: 6) {
+                LobbyLucideGlyph(paths: LobbyLucidePaths.sliders, size: 13)
+                Text("Settings")
+                    .font(.brand(13, .bold))
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            .foregroundColor(Palette.foreground)
+            .padding(.horizontal, 16)
             .frame(height: 42)
             .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
             .contentShape(shape)
@@ -324,6 +385,47 @@ struct LobbyView: View {
             invite = false
         }
     }
+
+    // MARK: Settings (host)
+
+    /// Opens the settings sheet - only for the host, and only once the lobby's
+    /// settings are known (nil = no sliders button, no "Settings").
+    private var settingsAction: (() -> Void)? {
+        guard game.iAmHost, game.lobbySettings != nil else { return nil }
+        return { openSettings() }
+    }
+
+    /// The sheet takes at most 88 % of the height, as in the browser; above it
+    /// the dimmed lobby stays visible.
+    private func settingsSheet(_ current: LobbySettings) -> some View {
+        GeometryReader { box in
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                LobbySettingsSheet(current: current,
+                                   save: { payload in game.updateLobbySettings(payload) },
+                                   close: { closeSettings() })
+                    .frame(height: box.size.height * 0.88)
+            }
+        }
+    }
+
+    private func openSettings() {
+        guard game.iAmHost, game.lobbySettings != nil else { return }
+        Haptics.tap()
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+            invite = false
+            settingsOpen = true
+        }
+    }
+
+    private func closeSettings() {
+        // a number field in the sheet may still have the keyboard up
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        withAnimation(.easeOut(duration: 0.2)) {
+            settingsOpen = false
+        }
+    }
 }
 
 // MARK: - Density
@@ -357,10 +459,14 @@ private struct LobbyDensity {
 
 /// The header as in the browser: rgba(7,7,14,.82), line at the bottom, padding
 /// 14/16. Round back button 36 (white 4 %, edge 7 %, purple arrow 15) and
-/// "Lobby" 25 pt extra bold, set tight.
+/// "Lobby" 25 pt extra bold, set tight. For the host, the round sliders button
+/// 32 at the right (white 5 %, edge 9 %, purple sliders 14) - smaller than the
+/// back button, so the header keeps its height.
 private struct LobbyHeaderBar: View {
     var verticalPadding: CGFloat = 14
     let goBack: () -> Void
+    /// nil = not the host, no settings button.
+    var openSettings: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -385,6 +491,10 @@ private struct LobbyHeaderBar: View {
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
+
+                if let open = openSettings {
+                    settingsButton(open)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, verticalPadding)
@@ -392,6 +502,19 @@ private struct LobbyHeaderBar: View {
             Rectangle().fill(Palette.border).frame(height: 1)
         }
         .background(LobbyPalette.header.ignoresSafeArea(edges: .top))
+    }
+
+    private func settingsButton(_ open: @escaping () -> Void) -> some View {
+        Button(action: open) {
+            LobbyLucideGlyph(paths: LobbyLucidePaths.sliders, size: 14)
+                .foregroundColor(Palette.accent)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(Color.white.opacity(0.05)))
+                .overlay(Circle().strokeBorder(Palette.rim, lineWidth: 1))
+                .contentShape(Circle())
+        }
+        .buttonStyle(LobbyPressStyle(pressed: 0.94))
+        .accessibilityLabel(Text("Lobby settings"))
     }
 }
 
