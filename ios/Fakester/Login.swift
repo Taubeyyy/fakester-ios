@@ -1150,7 +1150,7 @@ enum LucideIcon {
     case logIn, logOut, play, lock, eye, eyeOff, user, userPlus, users, arrowRight, headphones,
          messageCircle, triangleAlert, chevronRight, calendarDays, chartColumn, listChecks,
          shoppingBag, map, palette, bookmark, settings, sparkles, music2, x, search, check, chevronDown, type, smile, image, star,
-         gamepad2, crown, layers, target, bell, flame, trophy, clock
+         gamepad2, crown, layers, target, bell, flame, trophy, clock, userMinus
 
     /// The SVG path data from the web bundle. rect, circle, line, polyline and
     /// polygon elements are written out as the equivalent paths.
@@ -1256,6 +1256,8 @@ enum LucideIcon {
                     "M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22",
                     "M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22",
                     "M18 2H6v7a6 6 0 0 0 12 0V2Z"]
+        case .userMinus:
+            return ["M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", "M5 7a4 4 0 1 0 8 0a4 4 0 1 0-8 0", "M22 11h-6"]
         case .clock:
             return ["M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0", "M12 6 12 12 16 14"]
         case .star:

@@ -220,6 +220,11 @@ final class Api: ObservableObject {
         }
         let code: Int = (answer as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(code) else { throw RequestError.notice("The server refused (\(code)).") }
+        // A plain "OK" (empty body, `true`, text) counts as success where
+        // nothing is read from the answer.
+        if T.self == Ack.self, let ok = Ack() as? T {
+            return (try? JSONDecoder().decode(T.self, from: bytes)) ?? ok
+        }
         do {
             return try JSONDecoder().decode(T.self, from: bytes)
         } catch {
