@@ -79,6 +79,8 @@ struct RootView: View {
             FriendsView()
         } else if ScreenshotScene.sceneName == "playlists" {
             PlaylistsView()
+        } else if ScreenshotScene.sceneName == "daily" {
+            DailyView()
         } else {
             gameScreen
         }

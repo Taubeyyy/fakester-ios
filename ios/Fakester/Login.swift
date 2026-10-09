@@ -1150,7 +1150,8 @@ enum LucideIcon {
     case logIn, logOut, play, lock, eye, eyeOff, user, userPlus, users, arrowRight, headphones,
          messageCircle, triangleAlert, chevronRight, calendarDays, chartColumn, listChecks,
          shoppingBag, map, palette, bookmark, settings, sparkles, music2, x, search, check, chevronDown, type, smile, image, star,
-         gamepad2, crown, layers, target, bell, flame, trophy, clock, userMinus, disc, plus, trash2
+         gamepad2, crown, layers, target, bell, flame, trophy, clock, userMinus, disc, plus, trash2,
+         pause, volumeX, volume2, share2, circleCheck, circleAlert
 
     /// The SVG path data from the web bundle. rect, circle, line, polyline and
     /// polygon elements are written out as the equivalent paths.
@@ -1256,6 +1257,22 @@ enum LucideIcon {
                     "M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22",
                     "M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22",
                     "M18 2H6v7a6 6 0 0 0 12 0V2Z"]
+        case .pause:
+            return ["M15 4h2a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z",
+                    "M7 4h2a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"]
+        case .volumeX:
+            return ["M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z",
+                    "M22 9 16 15", "M16 9 22 15"]
+        case .volume2:
+            return ["M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z",
+                    "M16 9a5 5 0 0 1 0 6", "M19.364 18.364a9 9 0 0 0 0-12.728"]
+        case .share2:
+            return ["M15 5a3 3 0 1 0 6 0a3 3 0 1 0-6 0", "M3 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0",
+                    "M15 19a3 3 0 1 0 6 0a3 3 0 1 0-6 0", "M8.59 13.51 15.42 17.49", "M15.41 6.51 8.59 10.49"]
+        case .circleCheck:
+            return ["M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0", "m9 12 2 2 4-4"]
+        case .circleAlert:
+            return ["M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0", "M12 8v4", "M12 16h.01"]
         case .disc:
             return ["M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0", "M10 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0"]
         case .plus:

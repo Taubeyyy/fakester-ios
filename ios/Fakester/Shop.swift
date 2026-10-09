@@ -246,8 +246,9 @@ struct ShopCard: View {
         let shape = RoundedRectangle(cornerRadius: 16, style: .circular)
         VStack(alignment: .leading, spacing: 0) {
             topRow(g)
+            // min-height 78 in the browser includes the 20 + 20 padding (border-box).
             ItemPreview(item: item, type: type)
-                .frame(maxWidth: .infinity, minHeight: 78, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, minHeight: 78 - 40, maxHeight: .infinity)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 20)
             VStack(alignment: .leading, spacing: 4) {
