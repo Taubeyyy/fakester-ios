@@ -348,6 +348,7 @@ if let ls = lobbySettings {
 }
 
 checkPublicLobbies()
+checkProfile()
 
 print("\n\(checkCount) checks, \(failures) failures")
 exit(failures == 0 ? 0 : 1)

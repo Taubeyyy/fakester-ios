@@ -201,6 +201,25 @@ final class Api: ObservableObject {
         try await perform(path, method: "POST", jsonBody: jsonBody, withToken: true)
     }
 
+    /// GET outside /fakester - the public item catalog lives at the site root
+    /// (https://fakester.app/catalog.json).
+    func fetchAbsolute<T: Decodable>(_ address: String) async throws -> T {
+        guard let url = URL(string: address) else { throw RequestError.notice("Bad address.") }
+        let (bytes, answer): (Data, URLResponse)
+        do {
+            (bytes, answer) = try await URLSession.shared.data(from: url)
+        } catch {
+            throw RequestError.notice("No connection to the server.")
+        }
+        let code: Int = (answer as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(code) else { throw RequestError.notice("The server refused (\(code)).") }
+        do {
+            return try JSONDecoder().decode(T.self, from: bytes)
+        } catch {
+            throw RequestError.notice("Couldn't read the server's response.")
+        }
+    }
+
     /// Any account request whose body is more than text (numbers, lists):
     /// buying, equipping, friends, settings. `method` is "POST", "DELETE" or "PUT".
     /// Endpoints that answer with nothing useful can be decoded as `Api.Ack`.

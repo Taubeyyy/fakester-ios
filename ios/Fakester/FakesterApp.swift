@@ -61,6 +61,8 @@ struct RootView: View {
             CreateGameView()
         } else if ScreenshotScene.sceneName == "leaderboard" {
             LeaderboardView()
+        } else if ScreenshotScene.sceneName == "stats" {
+            StatsView()
         } else {
             gameScreen
         }
