@@ -201,6 +201,13 @@ final class Api: ObservableObject {
         try await perform(path, method: "POST", jsonBody: jsonBody, withToken: true)
     }
 
+    /// A username change answers with a fresh token - keep using that one.
+    func replaceToken(_ fresh: String) {
+        guard !fresh.isEmpty else { return }
+        token = fresh
+        store.set(fresh, forKey: "api.token")
+    }
+
     /// GET outside /fakester - the public item catalog lives at the site root
     /// (https://fakester.app/catalog.json).
     func fetchAbsolute<T: Decodable>(_ address: String) async throws -> T {

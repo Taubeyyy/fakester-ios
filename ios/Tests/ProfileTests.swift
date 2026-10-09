@@ -32,4 +32,11 @@ func checkProfile() {
     expectEqual("achievements: claimable", tally?.claimable, 0)
     let claim = parse(AchievementTally.self, #"{"achievements":[{"nextClaim":{"goal":1}},{"nextClaim":null},{}],"unlocked":1,"total":63}"#)
     expectEqual("achievements: one to claim", claim?.claimable, 1)
+
+    // Settings: the real /discord/status answer for the test account.
+    let discord = parse(DiscordStatus.self, #"{"linked":false,"discordUsername":null,"linkedAt":null}"#)
+    expect("discord: not linked", discord?.linked == false)
+    expectEqual("redeem: reward text", parse(RedeemResult.self, #"{"reward":"+500 Spots"}"#)?.reward, "+500 Spots")
+    expectEqual("link code as number", parse(DiscordLinkCode.self, #"{"code":482913}"#)?.code, "482913")
+    expect("username change without token", parse(UsernameChange.self, #"{"ok":true}"#)?.token == nil)
 }

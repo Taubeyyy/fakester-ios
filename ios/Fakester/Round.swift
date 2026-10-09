@@ -779,7 +779,7 @@ private struct RoundVolumeSlider: View {
 /// The clip volume, as the browser's slider handles it: 80 % by default and
 /// remembered across games (`fk_game_volume` there, `gameVolume` here); muting
 /// only lasts for this app session. The value goes to `AudioPlayer.volume`.
-private final class ClipVolume: ObservableObject {
+final class ClipVolume: ObservableObject {
     static let shared = ClipVolume()
     private static let storageKey: String = "gameVolume"
 

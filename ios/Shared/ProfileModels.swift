@@ -109,3 +109,45 @@ struct AchievementTally: Decodable {
         claimable = entries.filter { $0.canClaim }.count
     }
 }
+
+// MARK: - Settings answers (bodies and fields from the browser's settings screen)
+
+/// `POST /account/change-username` may answer with a new token.
+struct UsernameChange: Decodable {
+    let token: String?
+}
+
+/// `POST /redeem {code}` -> `{reward}` - a text like "+500 Spots".
+struct RedeemResult: Decodable {
+    let reward: String
+
+    private enum CodingKeys: String, CodingKey { case reward }
+    init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        reward = (try? c.decode(LooseValue.self, forKey: .reward))?.text ?? "a reward"
+    }
+}
+
+/// `GET /discord/status` -> `{linked, discordUsername, linkedAt}` (real answer 2026-10-05).
+struct DiscordStatus: Decodable {
+    let linked: Bool
+    let username: String?
+
+    private enum CodingKeys: String, CodingKey { case linked, discordUsername }
+    init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        linked = (try? c.decode(Bool.self, forKey: .linked)) ?? false
+        username = try? c.decode(String.self, forKey: .discordUsername)
+    }
+}
+
+/// `POST /discord/link-code` -> `{code}`, valid for 15 minutes.
+struct DiscordLinkCode: Decodable {
+    let code: String
+
+    private enum CodingKeys: String, CodingKey { case code }
+    init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        code = try c.decode(LooseValue.self, forKey: .code).text
+    }
+}
