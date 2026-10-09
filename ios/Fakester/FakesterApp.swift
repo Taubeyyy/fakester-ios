@@ -77,6 +77,8 @@ struct RootView: View {
             QuestsView(initialTab: "Awards")
         } else if ScreenshotScene.sceneName == "friends" {
             FriendsView()
+        } else if ScreenshotScene.sceneName == "playlists" {
+            PlaylistsView()
         } else {
             gameScreen
         }
