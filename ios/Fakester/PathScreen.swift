@@ -398,8 +398,9 @@ struct RewardChip: View {
             Text(reward.label).font(.brand(10, .bold)).lineLimit(1)
         }
         .foregroundColor(look.ink)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        // padding 4/8 plus the 1 px border, line height 15: 25 tall as measured.
+        .padding(.horizontal, 9)
+        .frame(height: 25)
         .background(Capsule().fill(look.fill))
         .overlay(Capsule().strokeBorder(look.edge, lineWidth: 1))
     }
