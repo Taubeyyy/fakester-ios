@@ -442,18 +442,25 @@ struct EffectName: View {
             base.shadow(color: color, radius: 1 - 0.5 * k, x: 0, y: 0)
                 .shadow(color: color, radius: 2.5 - 1 * k, x: 0, y: 0)
         case "nfx-x-ripple":
-            // A white band sweeps across in 3.2 s (background-position 120 % → -20 %).
+            // A white band sweeps left to right in 3.2 s: a 300 % wide gradient
+            // (white at 50 %, fading out by ±15 %) moved from position 120 % to
+            // -20 %, i.e. its centre travels from -0.9 to 1.9 widths, ±0.45 wide.
             let phase: Double = t.truncatingRemainder(dividingBy: 3.2) / 3.2
-            let centre: Double = 1.2 - 1.4 * phase
+            let centre: Double = -0.9 + 2.8 * phase
             let band = LinearGradient(stops: [
-                .init(color: color, location: 0),
-                .init(color: color, location: max(0, min(1, centre - 0.15))),
-                .init(color: .white, location: max(0, min(1, centre))),
-                .init(color: color, location: max(0, min(1, centre + 0.15))),
-                .init(color: color, location: 1)
+                .init(color: color, location: 0.35),
+                .init(color: .white, location: 0.5),
+                .init(color: color, location: 0.65)
             ], startPoint: .leading, endPoint: .trailing)
             plainText.foregroundColor(.clear)
-                .overlay(Rectangle().fill(band).mask(plainText))
+                .overlay(
+                    GeometryReader { g in
+                        band
+                            .frame(width: g.size.width * 3, height: g.size.height)
+                            .offset(x: (CGFloat(centre) - 1.5) * g.size.width)
+                    }
+                    .mask(plainText)
+                )
                 .lineLimit(1)
         default:
             // nfx-x-static: 4 s of flicker in steps.

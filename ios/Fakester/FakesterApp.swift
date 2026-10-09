@@ -50,6 +50,13 @@ struct RootView: View {
             if game.currentPhase == .disconnected { look.commit() }
             await Updater.shared.checkForUpdate()
         }
+        // Logging in (or switching account) brings that account's look along.
+        .onChange(of: api.me?.id.text) { _ in
+            Task {
+                await look.sync(api)
+                if game.currentPhase == .disconnected { look.commit() }
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             Task { await Updater.shared.checkForUpdate() }
         }

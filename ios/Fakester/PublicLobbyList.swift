@@ -25,20 +25,28 @@ struct PublicLobbyList: View {
         }
     }
 
+    private func rows(_ list: [PublicLobby]) -> some View {
+        VStack(spacing: 6) {
+            ForEach(list) { lobby in
+                PublicLobbyRow(lobby: lobby, join: { join(lobby.pin) })
+            }
+        }
+    }
+
     @ViewBuilder
     private var content: some View {
         if let list = lobbies {
             if list.isEmpty {
                 emptyState
-            } else {
+            } else if list.count > 3 {
+                // Only scrolls once there are more lobbies than fit; a
+                // ScrollView would otherwise always claim the full 260 pt.
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 6) {
-                        ForEach(list) { lobby in
-                            PublicLobbyRow(lobby: lobby, join: { join(lobby.pin) })
-                        }
-                    }
+                    rows(list)
                 }
                 .frame(maxHeight: 260)
+            } else {
+                rows(list)
             }
         } else {
             VStack(spacing: 8) {

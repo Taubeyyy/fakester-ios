@@ -331,7 +331,9 @@ struct SettingsView: View {
 
     @MainActor
     private func redeem() async {
-        let c: String = code.trimmingCharacters(in: .whitespaces)
+        // As in the browser: capitals, digits, _ and - only, at most 24.
+        let allowed = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+        let c: String = String(code.uppercased().filter { allowed.contains($0) }.prefix(24))
         guard !c.isEmpty, busy == nil else { return }
         busy = "redeem"
         defer { busy = nil }
@@ -516,22 +518,26 @@ private struct SettingsLinkRow: View {
 /// Avatar with level badge, title, name, GAMES / WINS and the XP bar.
 private struct SettingsProfileCard: View {
     @EnvironmentObject private var api: Api
+    @State private var catalog: ItemCatalog?
+
+    private var titleName: String? {
+        catalog?.item("title", id: api.me.map { String($0.equipped_title_id ?? 1) })?.name
+    }
+
+    private var iconItem: CatalogItem? {
+        catalog?.item("icon", id: api.me.map { String($0.equipped_icon_id ?? 1) })
+    }
 
     var body: some View {
         let xp: Int = api.me?.xp ?? 0
         let level: Int = Api.Level.forXP(xp)
-        let low: Int = Api.Level.minXP(level)
         let high: Int = Api.Level.minXP(level + 1)
         let fraction: Double = Api.Level.fraction(xp: xp)
         let shape = RoundedRectangle(cornerRadius: 16, style: .circular)
         VStack(spacing: 12) {
             HStack(spacing: 14) {
                 ZStack(alignment: .bottomTrailing) {
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(Palette.accentPale)
-                        .frame(width: 56, height: 56)
-                        .background(Circle().fill(Color.white.opacity(0.07)))
+                    PlayerAvatar(size: 56, picture: api.me?.avatar_url, icon: iconItem)
                         .overlay(Circle().strokeBorder(Palette.accent.opacity(0.7), lineWidth: 2))
                     Text("\(level)")
                         .font(.system(size: 9, weight: .heavy))
@@ -542,11 +548,13 @@ private struct SettingsProfileCard: View {
                         .offset(x: 2, y: 2)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "crown").font(.system(size: 8, weight: .bold))
-                        Text("NEWBIE").font(.system(size: 10, weight: .bold)).tracking(1)
+                    if let title = titleName {
+                        HStack(spacing: 4) {
+                            Image(systemName: "crown").font(.system(size: 8, weight: .bold))
+                            Text(title.uppercased()).font(.system(size: 10, weight: .bold)).tracking(1).lineLimit(1)
+                        }
+                        .foregroundColor(Color(hex: 0xF59E0B))
                     }
-                    .foregroundColor(Color(hex: 0xF59E0B))
                     Text(api.me?.username ?? "")
                         .font(.brand(22, .heavy))
                         .foregroundColor(Palette.foreground)
@@ -558,7 +566,8 @@ private struct SettingsProfileCard: View {
                 counter(api.me?.wins ?? 0, "WINS")
             }
             HStack {
-                Text("\(max(0, xp - low)) / \(max(1, high - low)) XP to Lv.\(level + 1)")
+                // As in the browser: total XP over the start of the next level.
+                Text("\(groupedNumber(xp)) / \(groupedNumber(high)) XP to Lv.\(level + 1)")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(Palette.subdued)
                 Spacer(minLength: 0)
@@ -578,6 +587,14 @@ private struct SettingsProfileCard: View {
         .background(shape.fill(LinearGradient(colors: [Palette.accentDeep.opacity(0.18), Palette.card],
                                               startPoint: .top, endPoint: .bottom)))
         .overlay(shape.strokeBorder(Palette.accent.opacity(0.35), lineWidth: 1))
+        .task { await loadCatalog() }
+    }
+
+    @MainActor
+    private func loadCatalog() async {
+        if catalog == nil {
+            catalog = try? await api.fetchAbsolute("https://fakester.app/catalog.json")
+        }
     }
 
     private func counter(_ n: Int, _ label: String) -> some View {
@@ -635,9 +652,11 @@ private struct DiscordCodeDialog: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(RoundedRectangle(cornerRadius: 14, style: .circular).fill(Color(.sRGB, red: 10 / 255, green: 9 / 255, blue: 20 / 255, opacity: 0.8)))
+                    .onChange(of: state.code) { _ in copied = false }
                 Button {
                     UIPasteboard.general.string = state.code
                     copied = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { copied = false }
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.system(size: 12))

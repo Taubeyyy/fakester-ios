@@ -9,6 +9,10 @@ struct PlaylistsView: View {
     @Environment(\.dismiss) private var close
 
     @State private var saved: [SavedPlaylist] = []
+    /// Nothing is written before the real list has arrived - a PUT built from
+    /// an empty list that merely failed to load would wipe the saved ones.
+    @State private var loaded = false
+    @State private var busy = false
     @State private var link: String = ""
     @State private var checking = false
     @State private var toast: CosmeticToast?
@@ -29,7 +33,7 @@ struct PlaylistsView: View {
                                 SavedPlaylistRow(playlist: p) { Task { await remove(p) } }
                             }
                         }
-                        if saved.isEmpty { emptyState }
+                        if saved.isEmpty && loaded { emptyState }
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
@@ -159,8 +163,12 @@ struct PlaylistsView: View {
 
     @MainActor
     private func load() async {
-        if let list: SavedPlaylistList = try? await api.fetch("/profile") {
+        do {
+            let list: SavedPlaylistList = try await api.fetch("/profile")
             saved = list.items
+            loaded = true
+        } catch {
+            show("Could not load your playlists", error: true)
         }
     }
 
@@ -174,13 +182,22 @@ struct PlaylistsView: View {
     @MainActor
     private func add() async {
         let address: String = link.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !address.isEmpty, !checking else { return }
+        guard !address.isEmpty, !checking, !busy else { return }
+        guard loaded else {
+            show("Your playlists are still loading.", error: true)
+            await load()
+            return
+        }
         guard saved.count < slots else {
             show("All your playlist slots are full.", error: true)
             return
         }
         checking = true
-        defer { checking = false }
+        busy = true
+        defer {
+            checking = false
+            busy = false
+        }
         do {
             let info: PlaylistInfo = try await api.fetch("/playlist/info", ["url": address])
             if saved.contains(where: { $0.id == info.id }) {
@@ -201,6 +218,9 @@ struct PlaylistsView: View {
 
     @MainActor
     private func remove(_ p: SavedPlaylist) async {
+        guard loaded, !busy else { return }
+        busy = true
+        defer { busy = false }
         do {
             try await store(saved.filter { $0.id != p.id })
             Haptics.tap()
@@ -281,7 +301,7 @@ enum PlaylistCoverPalette {
     static func fill(_ index: Int) -> AnyShapeStyle {
         let pairs: [(UInt32, UInt32)] = [
             (0xEF4444, 0xF97316), (0xEC4899, 0xA855F7), (0x374151, 0x6B7280), (0xF472B6, 0xFDA4AF),
-            (0xB15CFF, 0xB15CFF), (0x0EA5E9, 0x22D3EE), (0x10B981, 0x84CC16), (0xF59E0B, 0xFBBF24)
+            (CosmeticLook.shared.accent, CosmeticLook.shared.accent), (0x0EA5E9, 0x22D3EE), (0x10B981, 0x84CC16), (0xF59E0B, 0xFBBF24)
         ]
         let p = pairs[max(0, min(pairs.count - 1, index))]
         return AnyShapeStyle(LinearGradient(colors: [Color(hex: p.0), Color(hex: p.1)],

@@ -620,13 +620,15 @@ struct DailyBonusSheet: View {
         do {
             let a: DailyBonusClaim = try await api.transmit("/daily-checkin")
             if a.isClaimed {
+                errorMessage = nil
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                     collected = BonusDay(day: a.streakDay, spots: a.spots, gold: a.gold, xp: a.xp, label: nil)
                 }
                 Haptics.correct()
                 await api.refreshProfile()
             } else {
-                errorMessage = "Already collected today"
+                // As in the browser: nothing to collect any more - just close.
+                close()
             }
         } catch {
             let text: String = error.localizedDescription

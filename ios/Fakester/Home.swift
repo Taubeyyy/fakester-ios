@@ -284,7 +284,7 @@ struct HomeView: View {
         HStack(spacing: 8) {
             ZStack {
                 Circle().fill(Color.black.opacity(0.16))
-                LucideGlyph(icon: .play, size: 11, fillColor: Color.white)
+                LucideGlyph(icon: .play, size: 11, fillColor: Palette.onAccent)
                     .padding(.leading, 1)
             }
             .frame(width: 22, height: 22)
@@ -521,7 +521,7 @@ private struct CreateButtonStyle: ButtonStyle {
         let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return configuration.label
             .font(.brand(15, .bold))
-            .foregroundColor(Color.white)
+            .foregroundColor(Palette.onAccent)
             .frame(maxWidth: .infinity)
             .frame(height: frameHeight)
             .background(shape.fill(Palette.accent))
@@ -991,7 +991,7 @@ struct LevelCard: View {
             HStack(spacing: 12) {
                 Text("\(level)")
                     .font(.brand(15, .heavy))
-                    .foregroundColor(Color.white)
+                    .foregroundColor(Palette.onAccent)
                     .frame(width: 40, height: 40)
                     .background(RoundedRectangle(cornerRadius: 18, style: .circular).fill(Palette.accent))
 
@@ -1291,7 +1291,7 @@ private struct JoinDialog: View {
         return KeypadKey(base: base, onTap: { if ready { joinGame() } }) {
             Text("Join")
                 .font(.system(size: 11, weight: .bold))
-                .foregroundColor(ready ? Color.white : Palette.subdued)
+                .foregroundColor(ready ? Palette.onAccent : Palette.subdued)
         }
     }
 
