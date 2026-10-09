@@ -40,6 +40,17 @@ func checkDaily() {
     expectEqual("finish: solution", finish?.solution.first?.correct, 2)
     expectEqual("finish without extras", parse(DailyFinish.self, #"{"correct":1,"total":5}"#)?.rewardSpots, 0)
 
+    let checkin: DailyBonus? = parse(DailyBonus.self, #"{"streak":0,"claimable":true,"today":{"day":1,"spots":70,"gold":0,"xp":0,"label":null},"current":1,"ladder":[{"day":1,"spots":70,"gold":0,"xp":0,"label":null},{"day":2,"spots":90,"gold":0,"xp":0,"label":null},{"day":3,"spots":110,"gold":0,"xp":0,"label":null},{"day":4,"spots":130,"gold":0,"xp":0,"label":null},{"day":5,"spots":150,"gold":0,"xp":0,"label":null},{"day":6,"spots":170,"gold":0,"xp":0,"label":null},{"day":7,"spots":390,"gold":5,"xp":0,"label":"One Week!"},{"day":8,"spots":210,"gold":0,"xp":0,"label":null},{"day":9,"spots":230,"gold":0,"xp":0,"label":null},{"day":10,"spots":250,"gold":0,"xp":0,"label":null}]}"#)
+    expectEqual("check-in: real ladder of ten", checkin?.ladder.count, 10)
+    expectEqual("check-in: day 7 label", checkin?.ladder[6].label, "One Week!")
+    expectEqual("check-in: day 7 gold", checkin?.ladder[6].gold, 5)
+    expectEqual("check-in: no label is nil", checkin?.ladder[0].label, nil)
+    expectEqual("check-in: today", checkin?.today.spots, 70)
+    expectEqual("check-in: streak", checkin?.streak, 0)
+    expectEqual("check-in: position", checkin?.current, 1)
+    let claimed: DailyBonusClaim? = parse(DailyBonusClaim.self, #"{"success":true,"streak":1,"claimed":true,"reward":70,"goldReward":0,"xpReward":0,"milestone":null,"newSpots":170,"newGold":0,"newXp":0}"#)
+    expect("check-in claim (real answer)", claimed?.isClaimed == true && claimed?.spots == 70 && claimed?.streakDay == 1)
+
     expectEqual("share text", DailyRules.shareText(day: 278, correct: 3, total: 5, answers: [1, -1, 2, 0, 3], solution: [1, 2, 2, 1, 3]),
                 "Fakester #278 · 3/5\n🟩⬛🟩⬛🟩\nfakester.app")
 }

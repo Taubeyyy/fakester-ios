@@ -86,6 +86,9 @@ struct RootView: View {
             PlaylistsView()
         } else if ScreenshotScene.sceneName == "daily" {
             DailyView()
+        } else if let bonus = ScreenshotScene.sampleBonus {
+            HomeView()
+                .sheet(isPresented: .constant(true)) { DailyBonusSheet(bonus: bonus) }
         } else {
             gameScreen
         }

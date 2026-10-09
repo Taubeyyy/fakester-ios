@@ -137,6 +137,37 @@ struct ClaimResult: Decodable {
 // MARK: - Daily reward
 
 /// `GET /daily-checkin` → `{claimable, current, today: {day, spots, gold, xp}, …}`
+/// One step on the 10-day ladder: `{day, spots, gold, xp, label}`.
+struct BonusDay: Decodable, Equatable {
+    let day: Int
+    let spots: Int
+    let gold: Int
+    let xp: Int
+    /// "One Week!" on day 7 - shown instead of the title.
+    let label: String?
+
+    private enum CodingKeys: String, CodingKey { case day, spots, gold, xp, label }
+    init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        day = (try? c.decode(LooseValue.self, forKey: .day))?.numeric ?? 1
+        spots = (try? c.decode(LooseValue.self, forKey: .spots))?.numeric ?? 0
+        gold = (try? c.decode(LooseValue.self, forKey: .gold))?.numeric ?? 0
+        xp = (try? c.decode(LooseValue.self, forKey: .xp))?.numeric ?? 0
+        let text: String? = try? c.decode(String.self, forKey: .label)
+        label = (text?.isEmpty ?? true) ? nil : text
+    }
+
+    init(day: Int, spots: Int, gold: Int, xp: Int, label: String?) {
+        self.day = day
+        self.spots = spots
+        self.gold = gold
+        self.xp = xp
+        self.label = label
+    }
+}
+
+/// `GET /daily-checkin` → `{streak, claimable, today, current, ladder}`
+/// (captured with the test account, 2026-10-09).
 struct DailyBonus: Decodable, Identifiable {
     var id: Int { dayNumber }
     let isClaimable: Bool
@@ -144,25 +175,36 @@ struct DailyBonus: Decodable, Identifiable {
     let spots: Int
     let gold: Int
     let xp: Int
+    let label: String?
+    let streak: Int
+    /// The ladder position of today.
+    let current: Int
+    let ladder: [BonusDay]
 
-    private enum CodingKeys: String, CodingKey { case claimable, current, today }
-    private enum TodayKeys: String, CodingKey { case day, spots, gold, xp }
+    private enum CodingKeys: String, CodingKey { case claimable, current, today, streak, ladder }
     init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
         isClaimable = (try? c.decode(Bool.self, forKey: .claimable)) ?? false
         let currentStreak: Int = (try? c.decode(LooseValue.self, forKey: .current))?.numeric ?? 0
-        if let h = try? c.nestedContainer(keyedBy: TodayKeys.self, forKey: .today) {
-            dayNumber = (try? h.decode(LooseValue.self, forKey: .day))?.numeric ?? (currentStreak + 1)
-            spots = (try? h.decode(LooseValue.self, forKey: .spots))?.numeric ?? 0
-            gold = (try? h.decode(LooseValue.self, forKey: .gold))?.numeric ?? 0
-            xp = (try? h.decode(LooseValue.self, forKey: .xp))?.numeric ?? 0
+        current = currentStreak
+        streak = (try? c.decode(LooseValue.self, forKey: .streak))?.numeric ?? 0
+        ladder = (try? c.decode(LenientArray<BonusDay>.self, forKey: .ladder))?.items ?? []
+        if let t = try? c.decode(BonusDay.self, forKey: .today) {
+            dayNumber = t.day
+            spots = t.spots
+            gold = t.gold
+            xp = t.xp
+            label = t.label
         } else {
             dayNumber = currentStreak + 1
             spots = 0
             gold = 0
             xp = 0
+            label = nil
         }
     }
+
+    var today: BonusDay { BonusDay(day: dayNumber, spots: spots, gold: gold, xp: xp, label: label) }
 }
 
 /// Response of `POST /daily-checkin` → `{claimed, streak, reward, goldReward, xpReward}`

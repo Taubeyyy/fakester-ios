@@ -436,97 +436,206 @@ private struct AwardCard: View {
 
 // MARK: - Daily reward
 
-/// Shown on launch when there is something to collect today - as in the browser.
+/// The daily reward (`SN` in the web bundle), shown on launch when there is
+/// something to collect: flame badge, "Daily reward" / "Day n in a row", the
+/// title ("Welcome back", the day's label, "Collected"), today's spots, the
+/// 10-day ladder and Claim. The sheet sits outside the page's font, so most
+/// of it is in the system font (San Francisco), the title in the brand font.
 struct DailyBonusSheet: View {
     @EnvironmentObject private var api: Api
     @Environment(\.dismiss) private var close
 
     let bonus: DailyBonus
     @State private var claiming = false
-    @State private var outcome: DailyBonusClaim?
+    @State private var collected: BonusDay?
     @State private var errorMessage: String?
+    @State private var contentHeight: CGFloat = 430
+
+    private var shown: BonusDay { collected ?? bonus.today }
+    private var finished: Bool { collected != nil || !bonus.isClaimable }
+    /// The ladder position that counts as "today" (one further once collected).
+    private var position: Int { bonus.current + (collected != nil ? 1 : 0) }
 
     var body: some View {
-        VStack(spacing: 18) {
-            Text("DAILY REWARD").eyebrow()
-            Text("Day \(outcome?.streakDay ?? bonus.dayNumber)")
-                .font(.brand(34, .heavy))
-                .foregroundStyle(Palette.gradientHero)
-            HStack(spacing: 10) {
-                RewardTile(symbol: "music.note", amount: outcome?.spots ?? bonus.spots, unit: "SPOTS", hue: Palette.good)
-                if (outcome?.xp ?? bonus.xp) > 0 {
-                    RewardTile(symbol: "star.fill", amount: outcome?.xp ?? bonus.xp, unit: "XP", hue: Palette.accent)
+        VStack(spacing: 0) {
+            header
+            ladder
+            footer
+        }
+        .background(GeometryReader { g in
+            Color.clear.preference(key: BonusHeightKey.self, value: g.size.height)
+        })
+        .onPreferenceChange(BonusHeightKey.self) { h in contentHeight = h }
+        .frame(maxWidth: .infinity, alignment: .top)
+        .background(Color(.sRGB, red: 24 / 255, green: 23 / 255, blue: 39 / 255, opacity: 0.98).ignoresSafeArea())
+        .presentationDetents([.height(contentHeight + 8)])
+        .presentationDragIndicator(.hidden)
+    }
+
+    private var header: some View {
+        VStack(spacing: 0) {
+            LucideGlyph(icon: .flame, size: CGFloat(min(30, 20 + shown.day)))
+                .foregroundColor(Palette.accent)
+                .frame(width: 56, height: 56)
+                .background(RoundedRectangle(cornerRadius: 18, style: .circular).fill(Palette.accent.opacity(0.16)))
+                .shadow(color: Palette.accentDeep.opacity(0.4), radius: 14)
+                .padding(.bottom, 12)
+            Text(shown.day > 1 ? "DAY \(shown.day) IN A ROW" : "DAILY REWARD")
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1)
+                .foregroundColor(Palette.accent)
+            Text(shown.label ?? (collected != nil ? "Collected" : (finished ? "See you tomorrow" : "Welcome back")))
+                .font(.brand(27, .heavy))
+                .foregroundColor(Palette.foreground)
+                .padding(.top, 4)
+            HStack(spacing: 12) {
+                HStack(spacing: 6) {
+                    LucideGlyph(icon: .music2, size: 14).foregroundColor(Palette.accent)
+                    Text("+\(groupedNumber(shown.spots))")
                 }
-                if (outcome?.gold ?? bonus.gold) > 0 {
-                    RewardTile(symbol: "trophy.fill", amount: outcome?.gold ?? bonus.gold, unit: "GS", hue: Palette.gold)
+                if shown.gold > 0 {
+                    HStack(spacing: 6) {
+                        GoldSpotsIcon(size: 14)
+                        Text("+\(shown.gold)")
+                    }
+                }
+                if shown.xp > 0 {
+                    Text("+\(shown.xp) XP").foregroundColor(Palette.gold)
                 }
             }
-            Text("Miss a day and the streak starts over at day 1.")
-                .font(.brand(12))
-                .foregroundColor(Palette.faint)
-                .multilineTextAlignment(.center)
-            if let f = errorMessage {
-                Text(f).font(.brand(12, .semibold)).foregroundColor(Palette.bad)
+            .font(.system(size: 15, weight: .bold))
+            .foregroundColor(Palette.foreground)
+            .padding(.top, 12)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 20)
+        .overlay(alignment: .topLeading) {
+            Button { close() } label: {
+                LucideGlyph(icon: .x, size: 12)
+                    .foregroundColor(Palette.subdued)
+                    .frame(width: 28, height: 28)
+                    .background(Circle().fill(Color.white.opacity(0.06)))
             }
-            if outcome == nil {
-                Button {
-                    Task { await claim() }
-                } label: {
-                    Text(claiming ? "…" : "Collect")
+            .buttonStyle(.plain)
+            .padding(12)
+            .accessibilityLabel(Text("Close"))
+        }
+    }
+
+    private var ladder: some View {
+        let first: Int = bonus.ladder.first?.day ?? 1
+        let last: Int = bonus.ladder.last?.day ?? 10
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(first > 1 ? "DAYS \(first)–\(last)" : "YOUR STREAK")
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1)
+                .foregroundColor(Palette.subdued)
+                .padding(.horizontal, 4)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 6) {
+                ForEach(0..<bonus.ladder.count, id: \.self) { i in
+                    dayTile(bonus.ladder[i])
                 }
-                .buttonStyle(PrimaryButtonStyle(dimmed: claiming))
-                .disabled(claiming)
-            } else {
-                Button("Done") { close() }
-                    .buttonStyle(PrimaryButtonStyle(hue: Palette.rim))
             }
         }
-        .padding(24)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+    }
+
+    private func dayTile(_ d: BonusDay) -> some View {
+        let past: Bool = d.day < position
+        let now: Bool = d.day == position
+        let special: Bool = d.label != nil
+        let shape = RoundedRectangle(cornerRadius: 18, style: .circular)
+        return VStack(spacing: 4) {
+            Text("DAY \(d.day)")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(now || special ? Palette.accent : Palette.subdued)
+            if past {
+                LucideGlyph(icon: .check, size: 13).foregroundColor(Palette.good)
+            } else {
+                Text(groupedNumber(d.spots))
+                    .font(.system(size: 11, weight: .bold).monospacedDigit())
+                    .foregroundColor(Palette.foreground)
+                if d.gold > 0 || d.xp > 0 {
+                    Text([d.gold > 0 ? "+\(d.gold)g" : nil, d.xp > 0 ? "+\(d.xp)xp" : nil].compactMap { $0 }.joined(separator: " "))
+                        .font(.system(size: 9))
+                        .foregroundColor(Palette.gold)
+                }
+            }
+        }
         .frame(maxWidth: .infinity)
-        .background(Palette.base.ignoresSafeArea())
-        .presentationDetents([.medium])
+        .padding(.horizontal, 4)
+        .padding(.vertical, 8)
+        .background(shape.fill(now ? Palette.accent.opacity(0.22) : (special ? Palette.accent.opacity(0.10) : Color.white.opacity(0.03))))
+        .overlay(shape.strokeBorder(now ? Palette.accent : (special ? Palette.accent.opacity(0.34) : Color.white.opacity(0.06)), lineWidth: 1))
+        .opacity(past ? 0.4 : 1)
+    }
+
+    private var footer: some View {
+        let shape = RoundedRectangle(cornerRadius: 16, style: .circular)
+        return VStack(spacing: 8) {
+            if let f = errorMessage {
+                Text(f).font(.system(size: 12, weight: .semibold)).foregroundColor(Palette.bad)
+            }
+            if finished {
+                Button { close() } label: {
+                    Text(collected != nil ? "Nice" : "Come back tomorrow")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(CosmeticTone.nameDim)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 49)
+                        .background(shape.fill(Color.white.opacity(0.05)))
+                }
+                .buttonStyle(.plain)
+            } else {
+                Button { Task { await claim() } } label: {
+                    Text(claiming ? "…" : "Claim")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(Palette.onAccent)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 49)
+                        .background(shape.fill(Palette.accent))
+                        .opacity(claiming ? 0.6 : 1)
+                }
+                .buttonStyle(.plain)
+                .disabled(claiming)
+                if bonus.streak > 0 {
+                    Text("Miss a day and the streak starts over at day 1.")
+                        .font(.system(size: 10))
+                        .foregroundColor(Palette.subdued)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
     }
 
     @MainActor
     private func claim() async {
+        guard !claiming else { return }
         claiming = true
         defer { claiming = false }
         do {
             let a: DailyBonusClaim = try await api.transmit("/daily-checkin")
             if a.isClaimed {
-                outcome = a
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                    collected = BonusDay(day: a.streakDay, spots: a.spots, gold: a.gold, xp: a.xp, label: nil)
+                }
                 Haptics.correct()
                 await api.refreshProfile()
             } else {
-                errorMessage = "Already collected today."
+                errorMessage = "Already collected today"
             }
         } catch {
-            errorMessage = error.localizedDescription
+            let text: String = error.localizedDescription
+            errorMessage = text.isEmpty ? "That did not go through" : text
         }
     }
 }
 
-private struct RewardTile: View {
-    let symbol: String
-    let amount: Int
-    let unit: String
-    let hue: Color
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Image(systemName: symbol)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(hue)
-            Text("+\(amount)")
-                .font(.mono(16))
-                .foregroundColor(Palette.foreground)
-            Text(unit)
-                .font(.brand(9, .black))
-                .tracking(1)
-                .foregroundColor(Palette.faint)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(GlassPanel(radius: 14))
-    }
+private struct BonusHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 430
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
