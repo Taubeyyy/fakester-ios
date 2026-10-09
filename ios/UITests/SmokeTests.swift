@@ -75,8 +75,15 @@ final class SmokeTests: XCTestCase {
 
         // 5. Five rounds: pick one answer per type, lock in, wait for the reveal
         for round in 1...5 {
+            // Wait for this round's own header ("ROUND n / 5", not the reveal's
+            // "ROUND n / 5 · Results"): rounds can follow each other within a few
+            // seconds, and matching only the answer buttons let the test fall a
+            // round behind the game.
+            let header = app.descendants(matching: .any).matching(NSPredicate(
+                format: "label BEGINSWITH %@ AND NOT (label CONTAINS %@)", "ROUND \(round) /", "Results")).firstMatch
+            waitFor(header, 90, "round \(round) header")
             let firstTitle = app.buttons["answer-title-0"]
-            waitFor(firstTitle, 90, "round \(round) answers")
+            waitFor(firstTitle, 10, "round \(round) answers")
             sleep(1)
             shot("05 round \(round)")
             firstTitle.tap()
@@ -90,7 +97,8 @@ final class SmokeTests: XCTestCase {
                 lock.tap()
                 if round == 1 { sleep(1); shot("07 round 1 locked in") }
             }
-            let results = element(containing: "Results")
+            let results = app.descendants(matching: .any).matching(NSPredicate(
+                format: "label BEGINSWITH %@ AND label CONTAINS %@", "ROUND \(round) /", "Results")).firstMatch
             waitFor(results, 60, "reveal of round \(round)")
             sleep(1)
             shot("08 reveal \(round)")
