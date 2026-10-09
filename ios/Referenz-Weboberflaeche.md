@@ -124,15 +124,34 @@ Schiebt sich als Blatt über die abgeblendete Runde, dauert nur `revealTime` (5 
 
 ## Was es im Browser gibt und in der App nicht
 
-Timeline, Higher/Lower, Survival, Race, Shop, Path, Style, Friends, Quest-Awards,
-Playlists, Settings, Daily, mehrere Playlists gemischt beim Erstellen,
-Lobby-Einstellungen nachträglich ändern, „Share result" als Bild.
+Stand 2026-10-09. **Fehlt noch:** die Spielmodi Timeline, Higher/Lower, Survival und Race
+(Erstellen kennt nur Quiz), mehrere Playlists gemischt beim Erstellen, gespeicherte Playlists
+als Auswahl im Erstellen-Bildschirm, `invite-friend` / `suggest-playlist` in der Lobby,
+„Share result" als Bild (die App teilt Text), die Live-Online-Anzeige der Freunde per WebSocket
+(die App nimmt `online` aus `/friends`).
 
-Seit 2026-10-04 in der App: **Create Game** (eine Playlist, nur Quiz-Modus),
-**Board** (Rangliste) und die **Emoji-Reaktionen** in der Runde.
-Danach dazu: **online-Zahl** (`/stats/live`, alle 30 s), **Quests** (Daily/Weekly/Milestones,
-ohne Awards), **tägliche Belohnung** (`/daily-checkin`) und für Gäste der Hinweis
-„That one needs an account" auf allem außer der Rangliste – genau wie im Browser.
+**In der App** (jeweils nach den Aufnahmen `k-*` des Testkontos nachgebaut, Logik aus dem Bundle):
+Create Game, Board, Emoji-Reaktionen, online-Zahl, tägliche Belohnung, Lobby-Einstellungen
+nachträglich, Kicken, öffentliche Lobbys beim Beitreten, **Stats**, **Settings** (Name, Passwort,
+Lautstärke, Code einlösen, Discord verbinden, Konto löschen), **Shop** (Spots/GoldSpots,
+Wochenend-Rabatt 20 %), **Style** (Ausrüsten; Akzentfarbe und Hintergrund färben danach die
+ganze App wie `--acc` im Browser), **Level Path** (Meilensteine abholen), **Quests** mit
+**Awards**, **Friends**, **Playlists**, **Daily**. Gäste bekommen auf allem außer der Rangliste
+„That one needs an account" – genau wie im Browser.
+
+### Konto-Bildschirme in Kürze
+
+- Gemeinsam: Kopf `rn` (runder Zurück-Knopf, Titel 25 extra fett), Karten `rgba(24,23,39,.92–.95)`,
+  Ecken 16, Abschnitts-Etiketten 11 fett gesperrt.
+- **Shop/Style**: Kategorie-Pillen, „Search items...", Filter-Menü, Gruppen (Earned rosa, Level
+  indigo, Shop Akzent, PRO gold …) mit 2-Spalten-Karten. Gesperrtes 45 % deckend mit Schloss.
+  Symbole: eigene SVG-Marken (`mark:vinyl` …) und Font Awesome 6.5.0 (CC BY 4.0, Hinweis in Settings).
+- **Level Path**: Kopfkarte mit Stufe, XP, Balken; Zeitleiste mit Knoten (pulsierend = du,
+  Haken = geschafft, Stern = Meilenstein) und Belohnungs-Chips.
+- **Quests**: vier Reiter (Daily, Weekly, Milestones, Awards), Countdown bis Mitternacht UTC
+  bzw. Montag 00:00 UTC; Awards mit Stufen-Punkten und goldenem Abholknopf.
+- **Daily**: Startkarte „5 songs. One try." → 5 × 15 s mit Cover und vier Titeln → Ergebnis
+  mit Quadraten, Teilen, Antworten und Tagesliste.
 
 ## Nachrichten, die der Browser schickt (aus dem Bundle, 2026-10-04)
 
@@ -149,3 +168,8 @@ REST (alles unter `/fakester`): `/playlists/featured`, `/playlist/info?url=`,
 `/daily`, `/daily/start`, `/daily/finish`, `/daily-checkin`, `/quests`, `/quests/claim`,
 `/shop/buy`, `/profile/equip`, `/friends`, `/friends/request`, `/friends/respond`,
 `/playlists/saved`, `/stats`, `/stats/live`. Der Gegenstandskatalog liegt unter `/catalog.json`.
+Dazu (aus dem Bundle, 2026-10-09): `/achievements`, `/achievements/claim {id, tier}`, `/level/rewards`,
+`/level/claim {level}`, `PUT /playlists/saved {playlists}`, `/shop/buy {itemId, itemType, cost, useGoldSpots}`,
+`/profile/equip {field, value}`, `/friends/request {username}`, `/friends/respond {friendshipId, accept}`,
+`DELETE /friends/<id>`, `/redeem {code}`, `/discord/status`, `/discord/link-code`, `/discord/unlink`,
+`/account/change-username`, `/account/change-password`, `DELETE /account/delete`, `/lobbies/public`.
