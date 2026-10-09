@@ -1096,9 +1096,11 @@ struct LucideGlyph: View {
     /// The colour is passed explicitly: a bare `fill()` can be ambiguous on
     /// newer SDKs.
     var fillColor: Color? = nil
+    /// lucide's `strokeWidth` on the 24 grid (2 unless a screen says otherwise).
+    var weight: CGFloat = 2
 
     var body: some View {
-        let style = StrokeStyle(lineWidth: size / 12, lineCap: .round, lineJoin: .round)
+        let style = StrokeStyle(lineWidth: size * weight / 24, lineCap: .round, lineJoin: .round)
         ZStack {
             if let tone = fillColor {
                 LucideShape(icon: icon).fill(tone)
@@ -1147,7 +1149,7 @@ struct LucideShape: Shape {
 enum LucideIcon {
     case logIn, logOut, play, lock, eye, eyeOff, user, userPlus, users, arrowRight, headphones,
          messageCircle, triangleAlert, chevronRight, calendarDays, chartColumn, listChecks,
-         shoppingBag, map, palette, bookmark, settings, sparkles, music2, x, search, check, chevronDown
+         shoppingBag, map, palette, bookmark, settings, sparkles, music2, x, search, check, chevronDown, type, smile, image, star
 
     /// The SVG path data from the web bundle. rect, circle, line, polyline and
     /// polygon elements are written out as the equivalent paths.
@@ -1223,6 +1225,15 @@ enum LucideIcon {
             return ["M20 6 9 17l-5-5"]
         case .chevronDown:
             return ["m6 9 6 6 6-6"]
+        case .type:
+            return ["M4 7 4 4 20 4 20 7", "M9 20h6", "M12 4v16"]
+        case .smile:
+            return ["M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0", "M8 14s1.5 2 4 2 4-2 4-2", "M9 9h.01", "M15 9h.01"]
+        case .image:
+            return ["M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+                    "M7 9a2 2 0 1 0 4 0a2 2 0 1 0-4 0", "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"]
+        case .star:
+            return ["M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"]
         }
     }
 }

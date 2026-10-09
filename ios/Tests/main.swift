@@ -350,6 +350,7 @@ if let ls = lobbySettings {
 checkPublicLobbies()
 checkProfile()
 checkCosmetics()
+checkLevelPath()
 
 print("\n\(checkCount) checks, \(failures) failures")
 exit(failures == 0 ? 0 : 1)

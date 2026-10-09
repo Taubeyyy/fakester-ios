@@ -69,6 +69,8 @@ struct RootView: View {
             ShopView()
         } else if ScreenshotScene.sceneName == "style" {
             StyleView()
+        } else if ScreenshotScene.sceneName == "path" {
+            PathView()
         } else {
             gameScreen
         }

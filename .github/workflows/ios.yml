@@ -150,7 +150,7 @@ jobs:
           xcrun simctl install "$UDID" "$APP"
           mkdir -p shots
           GAST="-gast.id guest-1791131740573-ope1d -gast.name Gast9694"
-          for S in login home join guest-notice create leaderboard stats settings shop style lobby round picked locked-in reveal game-over; do
+          for S in login home join guest-notice create leaderboard stats settings shop style path lobby round picked locked-in reveal game-over; do
             xcrun simctl terminate "$UDID" com.taubey.fakester 2>/dev/null || true
             if [ "$S" = login ]; then A=""; else A="$GAST"; fi
             xcrun simctl launch "$UDID" com.taubey.fakester -scene "$S" $A

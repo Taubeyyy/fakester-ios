@@ -135,3 +135,40 @@ func checkCosmetics() {
     expectEqual("hex value", CosmeticColor.rgb("#b15cff"), 0xB15CFF)
     expectEqual("short hex", CosmeticColor.rgb("#abc"), 0xAABBCC)
 }
+
+func checkLevelPath() {
+    section("Level path")
+    guard let catalog: ItemCatalog = parse(ItemCatalog.self, catalogJSON.replacingOccurrences(of: "\n", with: "")) else {
+        expect("catalog decodes", false)
+        return
+    }
+    let rewards: LevelRewards? = parse(LevelRewards.self, #"{"bonuses":{"2":150,"5":300,"10":500,"15":700,"20":1000,"25":1500,"30":2000,"40":3000,"50":5000},"claimed":[]}"#)
+    expectEqual("bonuses from text keys", rewards?.bonuses[5], 300)
+    expectEqual("same as the bundle's table", rewards?.bonuses, LevelPath.bonuses)
+    expectEqual("nothing claimed", rewards?.claimed, [])
+    expectEqual("claimed as numbers or text", parse(LevelRewards.self, #"{"claimed":[2,"5"]}"#)?.claimed, [2, 5])
+    expectEqual("claim reply", parse(LevelClaim.self, #"{"reward":150}"#)?.reward, 150)
+
+    let steps: [PathStep] = LevelPath.steps(catalog)
+    expectEqual("levels ascending", steps.map { $0.level }.prefix(3).map { $0 }, [1, 2, 5])
+    expectEqual("level 1 lists title, icon, background, accent in catalog order",
+                steps.first?.rewards.map { $0.label }, ["Newbie", "User", "Standard", "Fakester Purple"])
+    expect("level 1 is no milestone", steps.first?.milestone == false)
+    expectEqual("level 2 is only spots", steps.dropFirst().first?.rewards, [.spots(150)])
+    expectEqual("level 5: item before bonus", steps.first { $0.level == 5 }?.rewards.map { $0.label }, ["Regular", "+300"])
+    expectEqual("last step is level 50", steps.last?.level, 50)
+    expectEqual("anchor at level 1", LevelPath.anchor(steps, level: 1), 1)
+    expectEqual("anchor at level 7", LevelPath.anchor(steps, level: 7), 5)
+    let five: PathStep = steps.first { $0.level == 5 }!
+    expect("bonus claimable once reached", LevelPath.canClaim(five, level: 6, claimed: []))
+    expect("not before", !LevelPath.canClaim(five, level: 4, claimed: []))
+    expect("not twice", !LevelPath.canClaim(five, level: 6, claimed: [5]))
+    expect("no bonus, nothing to claim", !LevelPath.canClaim(steps[0], level: 3, claimed: []))
+
+    let fresh = LevelProgress(xp: 0)
+    expect("0 XP: level 1, 0 → 50", fresh.level == 1 && fresh.floor == 0 && fresh.ceiling == 50)
+    expectEqual("0 XP: 50 to go", fresh.toNext, 50)
+    let mid = LevelProgress(xp: 100)
+    expect("100 XP: level 2, 50 → 150", mid.level == 2 && mid.floor == 50 && mid.ceiling == 150)
+    expectEqual("100 XP: half way", mid.percent, 50)
+}
