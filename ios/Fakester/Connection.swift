@@ -51,6 +51,8 @@ final class Game: NSObject, ObservableObject {
 
     @Published var notice: String?
     @Published private(set) var kick: KickNotice?
+    /// A friend's invitation to their lobby (`friend-invite`), until answered.
+    @Published var invitation: FriendInvite?
 
     /// Who I am in this lobby.
     private(set) var ownId: String = ""
@@ -248,6 +250,13 @@ final class Game: NSObject, ObservableObject {
         emit("send-chat", ["text": cleaned])
     }
 
+    /// Invite an online friend into this lobby (`invite-friend {friendId,
+    /// friendName}`); account IDs go out as numbers, like the browser sends them.
+    func inviteFriend(id: String, name: String) {
+        let target: Any = Int(id).map { $0 as Any } ?? id
+        emit("invite-friend", ["friendId": target, "friendName": name])
+    }
+
     /// Emoji to everyone in the lobby/round.
     func react(_ emoji: String) {
         emit("send-reaction", ["reaction": emoji])
@@ -400,6 +409,11 @@ final class Game: NSObject, ObservableObject {
             wantsConnection = false
             tearDown()
             currentPhase = .disconnected
+
+        case "friend-invite":
+            if let invite = parse(FriendInvite.self), !invite.pin.isEmpty, invite.pin != pin {
+                invitation = invite
+            }
 
         case "host-changed":
             // The player list follows shortly as a lobby-update; all that

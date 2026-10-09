@@ -35,6 +35,7 @@ struct RootView: View {
         // The server talks in short notices ("Game not found!"), which would
         // otherwise get lost.
         .overlay(alignment: .top) { ToastBanner() }
+        .overlay(alignment: .top) { InvitationBanner() }
         .alert("Kicked", isPresented: .constant(game.kick != nil)) {
             Button("Ok") { game.leave() }
         } message: {
@@ -160,3 +161,65 @@ struct ToastBanner: View {
         }
     }
 }
+
+/// "Ana invited you to a game." with Join / Not now, for 20 seconds - the
+/// browser's `timer-confirm` toast for `friend-invite`. Joining leaves the
+/// current lobby first, like the browser does.
+struct InvitationBanner: View {
+    @EnvironmentObject private var game: Game
+    @EnvironmentObject private var api: Api
+
+    var body: some View {
+        if let invite = game.invitation {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("\(invite.from) invited you to a game.")
+                    .font(.brand(14, .semibold))
+                    .foregroundColor(Palette.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    Button {
+                        withAnimation { game.invitation = nil }
+                    } label: {
+                        Text("Not now")
+                            .font(.brand(13, .bold))
+                            .foregroundColor(Palette.subdued)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 36)
+                            .background(Capsule().fill(Color.white.opacity(0.06)))
+                    }
+                    .buttonStyle(.plain)
+                    Button {
+                        accept(invite)
+                    } label: {
+                        Text("Join")
+                            .font(.brand(13, .bold))
+                            .foregroundColor(Palette.onAccent)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 36)
+                            .background(Capsule().fill(Palette.accent))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(14)
+            .background(GlassPanel(radius: 20))
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .task(id: invite) {
+                try? await Task.sleep(nanoseconds: 20_000_000_000)
+                if game.invitation == invite {
+                    withAnimation { game.invitation = nil }
+                }
+            }
+        }
+    }
+
+    private func accept(_ invite: FriendInvite) {
+        game.invitation = nil
+        guard let who = api.identity else { return }
+        game.leave()
+        game.join(pin: invite.pin, asPlayer: who)
+    }
+}
+

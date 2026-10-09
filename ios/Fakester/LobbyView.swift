@@ -1078,14 +1078,20 @@ private struct LobbyChatCard: View {
 /// The "Invite players" sheet as in the browser: from the bottom, top corners
 /// 24, rgba(24,23,39,.98), purple edge 32 %. QR code with the link to the
 /// lobby, and the link to copy (and to share, as Safari offers on the iPhone).
-/// The friends list needs a server call the app does not make - so guests only
-/// see the note the browser shows them as well.
+/// Below: your friends (online first) with "Invite" for those online, which
+/// sends `invite-friend`; guests see the note the browser shows them.
 private struct InviteSheet: View {
     let pin: String
     let guest: Bool
     let close: () -> Void
+    @EnvironmentObject private var api: Api
+    @EnvironmentObject private var game: Game
     @State private var copied = false
     @State private var qr: UIImage? = nil
+    @State private var friendList: [FriendEntry] = []
+    @State private var friendsLoading = true
+    @State private var sent: Set<String> = []
+    @State private var catalog: ItemCatalog?
 
     private var link: String {
         "https://fakester.app/?pin=" + pin
@@ -1097,9 +1103,7 @@ private struct InviteSheet: View {
             VStack(alignment: .leading, spacing: 12) {
                 scanCard
                 linkRow
-                if guest {
-                    friends
-                }
+                friends
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
@@ -1113,6 +1117,24 @@ private struct InviteSheet: View {
                 qr = QRCodeImage.render(link)
             }
         }
+        .task { await loadFriends() }
+    }
+
+    /// Accepted friends, online first, then by name (`$3`).
+    @MainActor
+    private func loadFriends() async {
+        guard !guest else {
+            friendsLoading = false
+            return
+        }
+        async let items: ItemCatalog? = try? await api.fetchAbsolute("https://fakester.app/catalog.json")
+        if let list: FriendList = try? await api.fetch("/friends") {
+            friendList = list.friends.sorted { a, b in
+                a.online != b.online ? a.online : a.username.localizedCaseInsensitiveCompare(b.username) == .orderedAscending
+            }
+        }
+        friendsLoading = false
+        catalog = await items
     }
 
     /// The shape runs past the bottom edge - that way only the top corners
@@ -1263,12 +1285,13 @@ private struct InviteSheet: View {
     }
 
     private var friends: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let onlineCount: Int = friendList.filter { $0.online }.count
+        return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Image(systemName: "person.2")
                     .font(.system(size: 9, weight: .medium))
                     .frame(width: 11, height: 11)
-                Text("YOUR FRIENDS")
+                Text(friendList.isEmpty ? "YOUR FRIENDS" : "YOUR FRIENDS (\(onlineCount) ONLINE)")
                     .font(.system(size: 10, weight: .bold))
                     .tracking(1)
                     .lineLimit(1)
@@ -1276,14 +1299,87 @@ private struct InviteSheet: View {
             .foregroundColor(Palette.subdued)
             .padding(.top, 4)
 
-            Text("No friends added yet — add someone on the Friends screen, or just send them the link above.")
-                .font(.system(size: 11))
-                .foregroundColor(Palette.subdued)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 8)
+            if friendsLoading && !guest {
+                VStack(spacing: 6) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: 18, style: .circular)
+                            .fill(Color.white.opacity(0.04))
+                            .frame(height: 44)
+                    }
+                }
+            } else if friendList.isEmpty {
+                Text("No friends added yet — add someone on the Friends screen, or just send them the link above.")
+                    .font(.system(size: 11))
+                    .foregroundColor(Palette.subdued)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 8)
+            } else if friendList.count > 5 {
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 6) {
+                        ForEach(friendList) { f in
+                            friendRow(f)
+                        }
+                    }
+                }
+                .frame(maxHeight: 260)
+            } else {
+                VStack(spacing: 6) {
+                    ForEach(friendList) { f in
+                        friendRow(f)
+                    }
+                }
+            }
         }
+    }
+
+    /// Avatar 32 with an online dot, name, "Online"/"Offline", and the button.
+    private func friendRow(_ f: FriendEntry) -> some View {
+        let done: Bool = sent.contains(f.id)
+        let shape = RoundedRectangle(cornerRadius: 10, style: .circular)
+        return HStack(spacing: 10) {
+            PlayerAvatar(size: 32, picture: f.avatarURL, icon: catalog?.item("icon", id: f.iconID))
+                .overlay(alignment: .bottomTrailing) {
+                    Circle()
+                        .fill(f.online ? Color(hex: 0x22C55E) : Color(hex: 0x6A6889))
+                        .frame(width: 12, height: 12)
+                        .overlay(Circle().strokeBorder(Color(hex: 0x0D0C18), lineWidth: 2))
+                        .offset(x: 2, y: 2)
+                }
+            VStack(alignment: .leading, spacing: 0) {
+                Text(f.username)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Palette.foreground)
+                    .lineLimit(1)
+                Text(f.online ? "Online" : "Offline")
+                    .font(.system(size: 10))
+                    .foregroundColor(f.online ? Color(hex: 0x22C55E) : Palette.subdued)
+            }
+            Spacer(minLength: 0)
+            Button {
+                guard f.online, !done else { return }
+                game.inviteFriend(id: f.id, name: f.username)
+                Haptics.tap()
+                sent.insert(f.id)
+            } label: {
+                HStack(spacing: 4) {
+                    LucideGlyph(icon: done ? .check : .send, size: 11)
+                    Text(done ? "Sent" : "Invite")
+                }
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(done ? Color(hex: 0x4ADE80) : (f.online ? Palette.onAccent : Palette.subdued))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(shape.fill(done ? Color(hex: 0x22C55E).opacity(0.15) : (f.online ? Palette.accent : Color.white.opacity(0.05))))
+            }
+            .buttonStyle(.plain)
+            .disabled(!f.online || done)
+            .accessibilityLabel(Text(done ? "Invitation sent to \(f.username)" : "Invite \(f.username)"))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 18, style: .circular).fill(Color.white.opacity(0.03)))
     }
 
     private func copyToClipboard() {

@@ -25,4 +25,8 @@ func checkFriends() {
     expect("pro flag", list?.friends.first?.isPro == true)
     expect("numeric friendship id goes back as a number", list?.friends.first?.friendshipValue as? Int == 31)
     expect("text friendship id stays numeric too", list?.friends.last?.friendshipValue as? Int == 32)
+
+    expectEqual("invite: pin as number", parse(FriendInvite.self, #"{"from":"Ana","pin":4821}"#)?.pin, "4821")
+    expectEqual("invite: missing name", parse(FriendInvite.self, #"{"pin":"0042"}"#)?.from, "A friend")
+    expect("invite without pin is dropped", parse(FriendInvite.self, #"{"from":"Ana"}"#) == nil)
 }

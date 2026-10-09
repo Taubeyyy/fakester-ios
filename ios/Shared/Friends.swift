@@ -62,3 +62,17 @@ struct FriendList: Decodable {
     var waiting: [FriendEntry] { all.filter { $0.status == "pending" && $0.direction == "sent" } }
     var onlineCount: Int { friends.filter { $0.online }.count }
 }
+
+/// `friend-invite {from, pin}` over the WebSocket: a friend wants you in
+/// their lobby (from the bundle - the browser shows it as a 20 s prompt).
+struct FriendInvite: Decodable, Equatable {
+    let from: String
+    let pin: String
+
+    private enum CodingKeys: String, CodingKey { case from, pin }
+    init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        from = (try? c.decode(String.self, forKey: .from)) ?? "A friend"
+        pin = try c.decode(LooseValue.self, forKey: .pin).text
+    }
+}
