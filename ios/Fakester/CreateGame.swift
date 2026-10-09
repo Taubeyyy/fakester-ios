@@ -17,6 +17,8 @@ struct CreateGameView: View {
 
     @State private var setup = GameSetup()
     @State private var featuredPlaylists: [PlaylistEntry] = []
+    /// The player's saved playlists, listed after the featured ones (as in `F3`).
+    @State private var savedPlaylists: [PlaylistEntry] = []
     @State private var link = ""
     @State private var searching = false
     @State private var errorMessage: String?
@@ -123,7 +125,7 @@ struct CreateGameView: View {
                                onRemove: { removePlaylist() })
                         checkRow
                     }
-                    if !featuredPlaylists.isEmpty {
+                    if !featuredPlaylists.isEmpty || !savedPlaylists.isEmpty {
                         featuredList
                     }
                 }
@@ -235,6 +237,11 @@ struct CreateGameView: View {
     private var featuredList: some View {
         VStack(spacing: 6) {
             ForEach(featuredPlaylists) { entry in
+                LibraryRow(entry: entry, selected: setup.playlist?.id == entry.id) {
+                    toggleFeatured(entry)
+                }
+            }
+            ForEach(savedPlaylists.filter { s in !featuredPlaylists.contains { $0.id == s.id } }) { entry in
                 LibraryRow(entry: entry, selected: setup.playlist?.id == entry.id) {
                     toggleFeatured(entry)
                 }
@@ -443,6 +450,11 @@ struct CreateGameView: View {
         if let e: FeaturedPlaylists = try? await api.fetch("/playlists/featured") {
             featuredPlaylists = e.entries
             if setup.playlist == nil, let firstFeatured = e.entries.first { setup.playlist = firstFeatured }
+        }
+        if api.isLoggedIn, let mine: SavedPlaylistList = try? await api.fetch("/profile") {
+            savedPlaylists = mine.items.map { p in
+                PlaylistEntry(id: p.id, name: p.name, picture: p.image, origin: p.source)
+            }
         }
     }
 
