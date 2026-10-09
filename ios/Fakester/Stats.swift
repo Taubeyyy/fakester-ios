@@ -35,7 +35,7 @@ struct StatsView: View {
         }
         .task { await load() }
         .fullScreenCover(isPresented: $awardsOpen) {
-            QuestsView()
+            QuestsView(initialTab: "Awards")
                 .environmentObject(api)
                 .preferredColorScheme(.dark)
         }

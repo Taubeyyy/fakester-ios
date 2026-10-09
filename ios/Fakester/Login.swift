@@ -1149,7 +1149,8 @@ struct LucideShape: Shape {
 enum LucideIcon {
     case logIn, logOut, play, lock, eye, eyeOff, user, userPlus, users, arrowRight, headphones,
          messageCircle, triangleAlert, chevronRight, calendarDays, chartColumn, listChecks,
-         shoppingBag, map, palette, bookmark, settings, sparkles, music2, x, search, check, chevronDown, type, smile, image, star
+         shoppingBag, map, palette, bookmark, settings, sparkles, music2, x, search, check, chevronDown, type, smile, image, star,
+         gamepad2, crown, layers, target, bell, flame, trophy, clock
 
     /// The SVG path data from the web bundle. rect, circle, line, polyline and
     /// polygon elements are written out as the equivalent paths.
@@ -1232,6 +1233,31 @@ enum LucideIcon {
         case .image:
             return ["M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
                     "M7 9a2 2 0 1 0 4 0a2 2 0 1 0-4 0", "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"]
+        case .gamepad2:
+            return ["M6 11h4", "M8 9v4", "M15 12h.01", "M18 10h.01",
+                    "M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"]
+        case .crown:
+            return ["M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z",
+                    "M5 21h14"]
+        case .layers:
+            return ["M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z",
+                    "M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12",
+                    "M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"]
+        case .target:
+            return ["M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0", "M6 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0",
+                    "M10 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0"]
+        case .bell:
+            return ["M10.268 21a2 2 0 0 0 3.464 0",
+                    "M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"]
+        case .flame:
+            return ["M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"]
+        case .trophy:
+            return ["M6 9H4.5a2.5 2.5 0 0 1 0-5H6", "M18 9h1.5a2.5 2.5 0 0 0 0-5H18", "M4 22h16",
+                    "M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22",
+                    "M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22",
+                    "M18 2H6v7a6 6 0 0 0 12 0V2Z"]
+        case .clock:
+            return ["M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0", "M12 6 12 12 16 14"]
         case .star:
             return ["M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"]
         }

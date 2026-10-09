@@ -71,6 +71,10 @@ struct RootView: View {
             StyleView()
         } else if ScreenshotScene.sceneName == "path" {
             PathView()
+        } else if ScreenshotScene.sceneName == "quests" {
+            QuestsView()
+        } else if ScreenshotScene.sceneName == "awards" {
+            QuestsView(initialTab: "Awards")
         } else {
             gameScreen
         }
