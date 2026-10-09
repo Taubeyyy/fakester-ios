@@ -21,6 +21,8 @@ struct HomeView: View {
     @State private var createGame = false
     @State private var leaderboardOpen = false
     @State private var quests = false
+    /// The account screens (and Stats, which guests may open too).
+    @State private var accountScreen: AccountScreen?
     @State private var guestGate = false
     @State private var dailyBonus: DailyBonus?
     @State private var live: LiveStats?
@@ -72,6 +74,12 @@ struct HomeView: View {
                 .environmentObject(api)
                 .preferredColorScheme(.dark)
         }
+        .fullScreenCover(item: $accountScreen) { screen in
+            accountView(screen)
+                .environmentObject(api)
+                .environmentObject(game)
+                .preferredColorScheme(.dark)
+        }
         .sheet(item: $dailyBonus) { b in
             DailyBonusSheet(bonus: b)
                 .environmentObject(api)
@@ -109,8 +117,17 @@ struct HomeView: View {
         }
         if id == "quests" {
             quests = true
+        } else if let screen = AccountScreen(rawValue: id), AccountScreen.built.contains(screen) {
+            accountScreen = screen
         } else {
             browserOnly(name)
+        }
+    }
+
+    @ViewBuilder
+    private func accountView(_ screen: AccountScreen) -> some View {
+        switch screen {
+        default: EmptyView()
         }
     }
 
@@ -167,7 +184,15 @@ struct HomeView: View {
     /// Top bar: px 12, py 10, a line below (border-b, white 7 %).
     private func header(_ m: Density) -> some View {
         HStack(spacing: 10) {
-            HeaderChip()
+            // As in the browser, the profile chip opens Stats - for guests too.
+            Button {
+                Haptics.tap()
+                if AccountScreen.built.contains(.stats) { accountScreen = .stats }
+            } label: {
+                HeaderChip()
+            }
+            .buttonStyle(SoftPressStyle(pressScale: 0.97))
+            .accessibilityLabel(Text("Stats"))
             Spacer(minLength: 0)
             SpotsPill()
         }
@@ -296,6 +321,16 @@ struct HomeView: View {
         .padding(.top, m.footerTop)
         .padding(.bottom, m.footerBottom)
     }
+}
+
+/// Where the home tiles lead (ids as in the browser).
+private enum AccountScreen: String, Identifiable {
+    case daily, shop, path, style, friends, playlists, settings, stats
+    var id: String { rawValue }
+
+    /// The screens that exist in the app so far; the others still say
+    /// "browser-only".
+    static let built: Set<AccountScreen> = []
 }
 
 // MARK: - Density
@@ -1125,6 +1160,8 @@ private struct JoinDialog: View {
     @Binding var pin: String
     let joinGame: () -> Void
     let close: () -> Void
+    /// "Browse public lobbies" swaps the keypad for the list, as in the browser.
+    @State private var browsing = false
 
     private let rows: [[String]] = [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"]]
 
@@ -1146,8 +1183,17 @@ private struct JoinDialog: View {
                 .font(.brand(20, .bold))
                 .foregroundColor(Palette.foreground)
                 .frame(height: 30)
-            digitBox
-            keypad
+            if browsing {
+                PublicLobbyList(join: { chosen in
+                    pin = chosen
+                    joinGame()
+                })
+                switchButton(title: "Enter a PIN instead", symbol: "number") { browsing = false }
+            } else {
+                digitBox
+                keypad
+                switchButton(title: "Browse public lobbies", symbol: "globe") { browsing = true }
+            }
             Button(action: close) {
                 Text("Cancel")
                     .font(.system(size: 13, weight: .semibold))
@@ -1162,6 +1208,29 @@ private struct JoinDialog: View {
         .padding(25)
         .background(shape.fill(HomePalette.dialog).shadow(color: Color.black.opacity(0.6), radius: 30, x: 0, y: 0))
         .overlay(shape.strokeBorder(Palette.border, lineWidth: 1))
+    }
+
+    /// "Browse public lobbies" / "Enter a PIN instead": full width, 46 tall,
+    /// corners 16, outline white 9 %, icon + 13 pt bold.
+    private func switchButton(title: String, symbol: String, action: @escaping () -> Void) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 16, style: .circular)
+        return Button {
+            Haptics.tap()
+            withAnimation(.easeOut(duration: 0.18)) { action() }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: symbol)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 13, weight: .bold))
+            }
+            .foregroundColor(Palette.foreground)
+            .frame(maxWidth: .infinity)
+            .frame(height: 46)
+            .background(shape.fill(Color.white.opacity(0.02)))
+            .overlay(shape.strokeBorder(Color.white.opacity(0.09), lineWidth: 1))
+        }
+        .buttonStyle(SoftPressStyle(pressScale: 0.97))
     }
 
     private var digitBox: some View {
