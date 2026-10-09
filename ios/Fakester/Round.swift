@@ -63,7 +63,7 @@ struct RoundView: View {
 /// Values that only appear on this screen (read from the web bundle).
 private enum RoundPalette {
     /// --acc-pale for #b15cff: text of a picked answer.
-    static let pale = Color(hex: 0xCC95FF)
+    static var pale: Color { Palette.accentPale }
     /// #b0aed2: answer text, other players' names, "Change answer".
     static let optionText = Color(hex: 0xB0AED2)
     /// #f59e0b: the clock from 10 seconds on.

@@ -80,6 +80,10 @@ struct HomeView: View {
                 .environmentObject(game)
                 .preferredColorScheme(.dark)
         }
+        // Back from Style: a newly equipped accent or background takes over.
+        .onChange(of: accountScreen) { screen in
+            if screen == nil { CosmeticLook.shared.commit() }
+        }
         .sheet(item: $dailyBonus) { b in
             DailyBonusSheet(bonus: b)
                 .environmentObject(api)
@@ -460,7 +464,7 @@ private enum HomePalette {
     /// #c9c8e0 - text in the guest dialog
     static let hint = Color(hex: 0xC9C8E0)
     /// --acc-pale for #b15cff (lightness + 35 %), the figure in the avatar
-    static let accentPale = Color(hex: 0xCC95FF)
+    static var accentPale: Color { Palette.accentPale }
     static let stripFill = Color(.sRGB, red: 24 / 255, green: 23 / 255, blue: 39 / 255, opacity: 0.9)
     static let flat = Color(.sRGB, red: 24 / 255, green: 23 / 255, blue: 39 / 255, opacity: 0.5)
     static let level = Color(.sRGB, red: 24 / 255, green: 23 / 255, blue: 39 / 255, opacity: 0.75)

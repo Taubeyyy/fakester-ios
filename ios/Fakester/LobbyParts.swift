@@ -195,7 +195,7 @@ private enum PlayerTilePalette {
     /// #f59e0b - "Host", "CREATOR", "RECONNECTING…"
     static let amber = Color(hex: 0xF59E0B)
     /// --acc-pale for #b15cff
-    static let pale = Color(hex: 0xCC95FF)
+    static var pale: Color { Palette.accentPale }
     /// The kick button: rgba(239,68,68,.15)
     static let kickFill = Color(hex: 0xEF4444).opacity(0.15)
 }

@@ -8,7 +8,7 @@ import SwiftUI
 
 enum CosmeticTone {
     /// --acc-pale for the default accent, measured rgb(204,149,255).
-    static let accentPale = Color(hex: 0xCC95FF)
+    static var accentPale: Color { Palette.accentPale }
     /// The spots colour (`Iu` = #a78bfa) - always lilac, whatever the accent.
     static let spots = Color(hex: 0xA78BFA)
     /// The ink on a lilac "Buy" button (`k3`).

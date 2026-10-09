@@ -1396,8 +1396,8 @@ private struct FinalConfettiPiece: View {
     let area: CGSize
     let falling: Bool
 
-    private static let colors: [Color] = [Palette.accent, Palette.accentDeep, Palette.good,
-                                          Color(hex: 0xF59E0B), Palette.bad, Color(hex: 0x60A5FA), Palette.gold]
+    private static var colors: [Color] { [Palette.accent, Palette.accentDeep, Palette.good,
+                                          Color(hex: 0xF59E0B), Palette.bad, Color(hex: 0x60A5FA), Palette.gold] }
 
     var body: some View {
         let s: Double = Double(seed)
@@ -1669,7 +1669,7 @@ private enum RevealPalette {
     /// #b0aed2 - artist, quiet button text, other players' totals.
     static let lavender: Color = Color(hex: 0xB0AED2)
     /// #cc95ff (--acc-pale) - the person symbol in avatars.
-    static let avatarPale: Color = Color(hex: 0xCC95FF)
+    static var avatarPale: Color { Palette.accentPale }
     /// #f59e0b - your row, the guest card, GS.
     static let amber: Color = Color(hex: 0xF59E0B)
     /// #fcd34d - the guest card text.

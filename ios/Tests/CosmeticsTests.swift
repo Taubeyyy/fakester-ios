@@ -128,6 +128,18 @@ func checkCosmetics() {
         expectEqual("groups in browser order", groups, [.earned, .level, .shop])
     }
 
+    section("Cosmetics: accent shades (reference values from the bundle's JavaScript)")
+    let shades: [(UInt32, UInt32, UInt32)] = [
+        (0xB15CFF, 0x7000D7, 0xCC95FF), (0x10B981, 0x007D53, 0x46EFB7), (0xF59E0B, 0x9F6400, 0xF9C060),
+        (0xD9480F, 0x902900, 0xF38256), (0x0EA5E9, 0x006A99, 0x5EC6F5)
+    ]
+    for (base, deep, pale) in shades {
+        expectEqual("deep of \(String(base, radix: 16))", AccentShades.deep(base), deep)
+        expectEqual("pale of \(String(base, radix: 16))", AccentShades.pale(base), pale)
+    }
+    expect("white ink on the default purple", !AccentShades.wantsDarkInk(0xB15CFF))
+    expect("dark ink on Sun", AccentShades.wantsDarkInk(0xF59E0B))
+
     section("Cosmetics: colours")
     expectEqual("plain colour", CosmeticColor.representative("#60a5fa"), "#60a5fa")
     expectEqual("gradient middle stop", CosmeticColor.representative("linear-gradient(90deg,#fde68a,#d97706,#fbbf24)"), "#d97706")

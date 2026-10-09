@@ -14,18 +14,21 @@ enum Palette {
     static let card      = Color(.sRGB, red: 24 / 255, green: 23 / 255, blue: 39 / 255, opacity: 0.92)
     static let border      = Color.white.opacity(0.07)            // --border
     static let rim      = Color.white.opacity(0.09)
-    /// --acc: follows the equipped item; this purple is the default.
-    static let accent     = Color(hex: 0xB15CFF)
-    static let accentDeep = Color(hex: 0x7000D7)                 // the glow under purple buttons
-    static let accentLight = Color(hex: 0xC77DFF)
+    /// --acc: follows the equipped accent (`CosmeticLook`); #b15cff by default.
+    static var accent: Color { Color(hex: CosmeticLook.shared.accent) }
+    /// --acc-deep: the glow under purple buttons (#7000d7 by default).
+    static var accentDeep: Color { Color(hex: AccentShades.deep(CosmeticLook.shared.accent)) }
+    /// --acc-pale: light accent for icons and selected text (#cc95ff by default).
+    static var accentPale: Color { Color(hex: AccentShades.pale(CosmeticLook.shared.accent)) }
+    static var accentLight: Color { accentPale }
     static let foreground    = Color(hex: 0xEEEEFF)                 // --foreground
     static let subdued  = Color(hex: 0x8D8BA4)                 // labels, "/ 5"
     static let faint      = Color(hex: 0x7877A0)                 // --muted-foreground
     static let good        = Color(hex: 0x34D399)                 // --accent
     static let bad   = Color(hex: 0xF87171)                 // --destructive
     static let gold       = Color(hex: 0xFBBF24)
-    /// Text on the purple button - white in the browser.
-    static let onAccent  = Color.white
+    /// --acc-ink: text on accent buttons - white, dark on light accents.
+    static var onAccent: Color { AccentShades.wantsDarkInk(CosmeticLook.shared.accent) ? Color(hex: 0x0D0D14) : Color.white }
 
     /// The four tile colours on the home screen - in the browser each tile has
     /// its own hue, which is half of what makes the screen recognisable.
@@ -37,11 +40,13 @@ enum Palette {
 
     /// The big button. A flat colour in the browser (#b15cff), no gradient -
     /// the name stays so every call site keeps working.
-    static let gradient = LinearGradient(colors: [Color(hex: 0xB15CFF), Color(hex: 0xB15CFF)],
-                                        startPoint: .top, endPoint: .bottom)
+    static var gradient: LinearGradient {
+        LinearGradient(colors: [accent, accent], startPoint: .top, endPoint: .bottom)
+    }
     /// "STER" in the wordmark - flat as well.
-    static let gradientHero = LinearGradient(colors: [Color(hex: 0xB15CFF), Color(hex: 0xB15CFF)],
-                                            startPoint: .leading, endPoint: .trailing)
+    static var gradientHero: LinearGradient {
+        LinearGradient(colors: [accent, accent], startPoint: .leading, endPoint: .trailing)
+    }
 }
 
 extension Color {
@@ -104,8 +109,13 @@ struct Backdrop: View {
             let h: CGFloat = geo.size.height
             ZStack(alignment: .topLeading) {
                 Palette.base
+                if let css = CosmeticLook.shared.background {
+                    // An equipped background replaces the blobs (`xt`); the dots stay.
+                    BackgroundSwatch(cssClass: css)
+                    DotGrid()
+                } else {
                 DotGrid()
-                Blob(hue: Color(hex: 0x7000D7), diameter: 600, blurRadius: 90)
+                Blob(hue: Palette.accentDeep, diameter: 600, blurRadius: 90)
                     .opacity(0.28)
                     .scaleEffect(drifting ? 1.06 : 1)
                     .position(x: -96 + 300, y: (drifting ? -44 : 0) - 192 + 300)
@@ -119,6 +129,7 @@ struct Backdrop: View {
                     .opacity(0.12)
                     .position(x: b * 0.55 + 140 + (drifting ? -20 : 0), y: h * 0.55 + 140 + (drifting ? -24 : 0))
                     .animation(.easeInOut(duration: 10).repeatForever(autoreverses: true).delay(7), value: drifting)
+                }
             }
         }
         .ignoresSafeArea()
@@ -285,7 +296,7 @@ extension Palette {
     static let gradientGold = LinearGradient(colors: [Color(hex: 0xFFBE48), Color(hex: 0xE89211)],
                                             startPoint: .topLeading, endPoint: .bottomTrailing)
     static let onGold = Color(hex: 0x2A1400)
-    static let accentDim = Color(hex: 0xB15CFF).opacity(0.14)   // --green-dim
+    static var accentDim: Color { accent.opacity(0.14) }   // --green-dim
 }
 
 extension Text {

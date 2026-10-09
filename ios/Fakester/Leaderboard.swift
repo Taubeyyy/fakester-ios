@@ -459,7 +459,7 @@ private enum BoardColors {
     static let pill = Color(.sRGB, red: 24 / 255, green: 23 / 255, blue: 39 / 255, opacity: 0.8)
     static let podiumFill = Color(.sRGB, red: 15 / 255, green: 13 / 255, blue: 26 / 255, opacity: 0.95)
     /// --acc-pale for the default accent, measured rgb(204,149,255).
-    static let accentPale = Color(hex: 0xCC95FF)
+    static var accentPale: Color { Palette.accentPale }
     static let amber = Color(hex: 0xF59E0B)
     static let ink = Color(hex: 0x07070E)
     static let red = Color(hex: 0xEF4444)

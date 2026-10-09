@@ -11,7 +11,6 @@ struct FakesterApp: App {
                 .environmentObject(api)
                 .environmentObject(game)
                 .preferredColorScheme(.dark)
-                .tint(Palette.accent)
         }
     }
 }
@@ -21,6 +20,7 @@ struct FakesterApp: App {
 struct RootView: View {
     @EnvironmentObject private var api: Api
     @EnvironmentObject private var game: Game
+    @ObservedObject private var look = CosmeticLook.shared
     @State private var feedbackOpen = false
 
     var body: some View {
@@ -28,6 +28,9 @@ struct RootView: View {
             Backdrop()
             currentScreen
         }
+        // A new accent or background rebuilds the screens in the new colours.
+        .id(look.version)
+        .tint(Palette.accent)
         .animation(.easeInOut(duration: 0.22), value: game.currentPhase)
         // The server talks in short notices ("Game not found!"), which would
         // otherwise get lost.
@@ -42,6 +45,8 @@ struct RootView: View {
             ScreenshotScene.run(game)
             #endif
             await api.refreshProfile()
+            await look.sync(api)
+            if game.currentPhase == .disconnected { look.commit() }
             await Updater.shared.checkForUpdate()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in

@@ -569,7 +569,7 @@ private enum LoginPalette {
     static let placeholderText = Color(.sRGB, red: 238 / 255, green: 238 / 255, blue: 1, opacity: 0.5)
     static let lightPurple = Color(hex: 0xB0AED2)
     /// --acc-pale for #b15cff
-    static let pale        = Color(hex: 0xCC95FF)
+    static var pale: Color { Palette.accentPale }
     static let badge       = Color(hex: 0xF59E0B)
     static let badgeBorder = Color(hex: 0x181727)
     static let discordFill = Color(.sRGB, red: 88 / 255, green: 101 / 255, blue: 242 / 255, opacity: 0.16)

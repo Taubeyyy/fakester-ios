@@ -64,11 +64,15 @@ final class Api: ObservableObject {
         var equipped_title_id: Int?
         var avatar_url: String?
         var equipped_emoji: String?
+        /// For the app-wide look (`CosmeticLook`): IDs into catalog.json.
+        var equipped_accent_color_id: LooseValue?
+        var equipped_background_id: LooseValue?
 
         private enum CodingKeys: String, CodingKey {
             case id, username, xp, spots, gold_spots, is_pro, is_admin
             case games_played, wins, highscore
             case equipped_icon_id, equipped_title_id, avatar_url, equipped_emoji
+            case equipped_accent_color_id, equipped_background_id
         }
         init(from d: Decoder) throws {
             let c = try d.container(keyedBy: CodingKeys.self)
@@ -86,6 +90,8 @@ final class Api: ObservableObject {
             equipped_title_id = try? c.decode(Int.self, forKey: .equipped_title_id)
             avatar_url = try? c.decode(String.self, forKey: .avatar_url)
             equipped_emoji = try? c.decode(String.self, forKey: .equipped_emoji)
+            equipped_accent_color_id = try? c.decode(LooseValue.self, forKey: .equipped_accent_color_id)
+            equipped_background_id = try? c.decode(LooseValue.self, forKey: .equipped_background_id)
         }
     }
 
@@ -157,6 +163,7 @@ final class Api: ObservableObject {
     /// back with the same name right after logging out, because the identity
     /// doesn't need a login at all.
     func logOut() {
+        CosmeticLook.shared.reset()
         token = nil
         me = nil
         guest = nil

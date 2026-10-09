@@ -529,7 +529,7 @@ private struct SettingsProfileCard: View {
                 ZStack(alignment: .bottomTrailing) {
                     Image(systemName: "person.fill")
                         .font(.system(size: 24))
-                        .foregroundColor(Color(hex: 0xCC95FF))
+                        .foregroundColor(Palette.accentPale)
                         .frame(width: 56, height: 56)
                         .background(Circle().fill(Color.white.opacity(0.07)))
                         .overlay(Circle().strokeBorder(Palette.accent.opacity(0.7), lineWidth: 2))

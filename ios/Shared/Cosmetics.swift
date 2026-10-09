@@ -440,3 +440,53 @@ enum CosmeticColor {
         return UInt32(digits, radix: 16)
     }
 }
+
+/// The shades the browser derives from the equipped accent (`S2`, `k2`, `N2`):
+/// --acc-deep (saturation × 1.25, lightness × 0.62), --acc-pale (35 % of the
+/// way to white, at most 92 % lightness) and the ink on accent buttons (dark
+/// when the accent is light).
+enum AccentShades {
+    static let standard: UInt32 = 0xB15CFF
+
+    static func deep(_ rgb: UInt32) -> UInt32 {
+        let (h, s, l) = hsl(rgb)
+        return fromHSL(h, min(1, s * 1.25), l * 0.62)
+    }
+
+    static func pale(_ rgb: UInt32) -> UInt32 {
+        let (h, s, l) = hsl(rgb)
+        return fromHSL(h, s, min(0.92, l + (1 - l) * 0.35))
+    }
+
+    /// `(.299 r + .587 g + .114 b) / 255 > .62` → dark ink (#0d0d14).
+    static func wantsDarkInk(_ rgb: UInt32) -> Bool {
+        let r: Double = Double((rgb >> 16) & 0xFF), g: Double = Double((rgb >> 8) & 0xFF), b: Double = Double(rgb & 0xFF)
+        return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62
+    }
+
+    private static func hsl(_ rgb: UInt32) -> (Double, Double, Double) {
+        let r: Double = Double((rgb >> 16) & 0xFF) / 255
+        let g: Double = Double((rgb >> 8) & 0xFF) / 255
+        let b: Double = Double(rgb & 0xFF) / 255
+        let hi: Double = max(r, g, b), lo: Double = min(r, g, b)
+        let l: Double = (hi + lo) / 2
+        if hi == lo { return (0, 0, l) }
+        let d: Double = hi - lo
+        let s: Double = l > 0.5 ? d / (2 - hi - lo) : d / (hi + lo)
+        var h: Double
+        if hi == r { h = ((g - b) / d + (g < b ? 6 : 0)) / 6 }
+        else if hi == g { h = ((b - r) / d + 2) / 6 }
+        else { h = ((r - g) / d + 4) / 6 }
+        return (h, s, l)
+    }
+
+    private static func fromHSL(_ h: Double, _ s: Double, _ l: Double) -> UInt32 {
+        func channel(_ n: Double) -> UInt32 {
+            let k: Double = (n + h * 12).truncatingRemainder(dividingBy: 12)
+            let a: Double = s * min(l, 1 - l)
+            let v: Double = 255 * (l - a * max(-1, min(k - 3, 9 - k, 1)))
+            return UInt32(max(0, min(255, v.rounded())))
+        }
+        return (channel(0) << 16) | (channel(8) << 8) | channel(4)
+    }
+}

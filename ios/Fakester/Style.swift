@@ -150,6 +150,8 @@ struct StyleView: View {
             withAnimation { toast = CosmeticToast(text: "Equipped \(item.displayName)", isError: false) }
             if let fresh: Wardrobe = try? await api.fetch("/profile") { wardrobe = fresh }
             await api.refreshProfile()
+            // Accent and background take over the whole app once Style closes.
+            await CosmeticLook.shared.sync(api)
         } catch {
             Haptics.wrong()
             let text: String = error.localizedDescription
