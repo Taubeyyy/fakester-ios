@@ -788,13 +788,15 @@ struct TwoColumnGrid<Card: View>: View {
 struct CosmeticNotice: View {
     let text: String
     var loading: Bool = false
+    /// The empty state's icon: the shop shows a bag, Style a palette.
+    var icon: LucideIcon = .palette
 
     var body: some View {
         VStack(spacing: 12) {
             if loading {
                 BoardLoadingBars()
             } else {
-                LucideGlyph(icon: .palette, size: 26)
+                LucideGlyph(icon: icon, size: 26)
                     .foregroundColor(Palette.subdued)
             }
             Text(text)

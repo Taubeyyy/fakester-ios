@@ -372,7 +372,7 @@ private struct DailyCover: View {
                                        .init(color: Color(.sRGB, red: 4 / 255, green: 4 / 255, blue: 10 / 255, opacity: 0.75), location: 1)],
                                startPoint: .top, endPoint: .bottom)
                 HStack(spacing: 6) {
-                    BoardLoadingBars().scaleEffect(0.8, anchor: .bottomLeading).frame(width: 40, height: 16, alignment: .bottomLeading)
+                    BoardLoadingBars(tint: Color.white.opacity(0.85)).scaleEffect(0.8, anchor: .bottomLeading).frame(width: 40, height: 16, alignment: .bottomLeading)
                     Text("NOW PLAYING")
                         .font(.brand(10, .bold))
                         .tracking(1)
@@ -380,14 +380,33 @@ private struct DailyCover: View {
                 }
                 .padding(12)
             } else {
+                // No cover: a soft glow, a record that spins while the clip plays,
+                // and "NO COVER" underneath.
                 Circle()
-                    .fill(AngularGradient(colors: [Color(hex: 0x1A0040), Color(hex: 0x2D1B69), Color(hex: 0x1A0040), Color(hex: 0x3B0764), Color(hex: 0x1A0040)],
-                                          center: .center))
-                    .overlay(Circle().fill(RadialGradient(colors: [Palette.accent, Palette.accentDeep], center: .center, startRadius: 0, endRadius: 14))
-                        .frame(width: 28, height: 28))
+                    .fill(RadialGradient(colors: [Palette.accentDeep.opacity(0.4), Palette.accentDeep.opacity(0)],
+                                         center: .center, startRadius: 0, endRadius: 52))
+                    .frame(width: 160, height: 160)
+                    .blur(radius: 10)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 12) {
+                    TimelineView(.animation(paused: !playing)) { timeline in
+                        let angle: Double = timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 4) / 4 * 360
+                        Circle()
+                            .fill(AngularGradient(colors: [Color(hex: 0x1A0040), Color(hex: 0x2D1B69), Color(hex: 0x1A0040),
+                                                           Color(hex: 0x3B0764), Color(hex: 0x1A0040)], center: .center))
+                            .overlay(Circle().fill(RadialGradient(colors: [Palette.accent, Palette.accentDeep], center: .center,
+                                                                  startRadius: 0, endRadius: 14))
+                                .frame(width: 28, height: 28))
+                            .rotationEffect(.degrees(angle))
+                    }
                     .frame(width: 96, height: 96)
                     .shadow(color: Palette.accentDeep.opacity(0.5), radius: 16)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    Text("NO COVER")
+                        .font(.brand(11, .bold))
+                        .tracking(1)
+                        .foregroundColor(Color.white.opacity(0.35))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(width: 180, height: 180)

@@ -141,7 +141,7 @@ struct ShopView: View {
                 section(groups[gi].group, groups[gi].items, w)
             }
             if result.shown.isEmpty {
-                CosmeticNotice(text: search.isEmpty ? "Nothing here" : "Nothing matches that search")
+                CosmeticNotice(text: search.isEmpty ? "Nothing here" : "Nothing matches that search", icon: .shoppingBag)
             }
         }
     }

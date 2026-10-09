@@ -493,6 +493,8 @@ private struct BoardPressStyle: ButtonStyle {
 /// The browser's loader (`Ft`): nine 3 pt bars, 3 pt apart, accent at 55 %,
 /// bottom aligned in a 20 pt box, each bobbing with its own duration and delay.
 struct BoardLoadingBars: View {
+    /// The bar colour (`Ft`'s `color`): the accent at 55 % unless a screen says otherwise.
+    var tint: Color? = nil
     @State private var bouncing = false
 
     private let heights: [CGFloat] = [8, 14, 10, 18, 12, 16, 9, 13, 11]
@@ -514,7 +516,7 @@ struct BoardLoadingBars: View {
             .repeatForever(autoreverses: true)
             .delay(delays[i])
         return Capsule()
-            .fill(Palette.accent.opacity(0.55))
+            .fill(tint ?? Palette.accent.opacity(0.55))
             .frame(width: 3, height: heights[i])
             .scaleEffect(x: 1, y: bouncing ? 0.22 : 1, anchor: .bottom)
             .animation(motion, value: bouncing)
