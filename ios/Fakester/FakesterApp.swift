@@ -65,6 +65,10 @@ struct RootView: View {
             StatsView()
         } else if ScreenshotScene.sceneName == "settings" {
             SettingsView()
+        } else if ScreenshotScene.sceneName == "shop" {
+            ShopView()
+        } else if ScreenshotScene.sceneName == "style" {
+            StyleView()
         } else {
             gameScreen
         }

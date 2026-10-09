@@ -1147,7 +1147,7 @@ struct LucideShape: Shape {
 enum LucideIcon {
     case logIn, logOut, play, lock, eye, eyeOff, user, userPlus, users, arrowRight, headphones,
          messageCircle, triangleAlert, chevronRight, calendarDays, chartColumn, listChecks,
-         shoppingBag, map, palette, bookmark, settings, sparkles, music2, x
+         shoppingBag, map, palette, bookmark, settings, sparkles, music2, x, search, check, chevronDown
 
     /// The SVG path data from the web bundle. rect, circle, line, polyline and
     /// polygon elements are written out as the equivalent paths.
@@ -1217,6 +1217,12 @@ enum LucideIcon {
             return ["M4 18a4 4 0 1 0 8 0a4 4 0 1 0-8 0", "M12 18V2l7 4"]
         case .x:
             return ["M18 6 6 18", "m6 6 12 12"]
+        case .search:
+            return ["M3 11a8 8 0 1 0 16 0a8 8 0 1 0-16 0", "m21 21-4.3-4.3"]
+        case .check:
+            return ["M20 6 9 17l-5-5"]
+        case .chevronDown:
+            return ["m6 9 6 6 6-6"]
         }
     }
 }

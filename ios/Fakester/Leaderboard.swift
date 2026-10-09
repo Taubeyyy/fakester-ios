@@ -492,7 +492,7 @@ private struct BoardPressStyle: ButtonStyle {
 
 /// The browser's loader (`Ft`): nine 3 pt bars, 3 pt apart, accent at 55 %,
 /// bottom aligned in a 20 pt box, each bobbing with its own duration and delay.
-private struct BoardLoadingBars: View {
+struct BoardLoadingBars: View {
     @State private var bouncing = false
 
     private let heights: [CGFloat] = [8, 14, 10, 18, 12, 16, 9, 13, 11]

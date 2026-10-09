@@ -129,6 +129,8 @@ struct HomeView: View {
         switch screen {
         case .stats: StatsView()
         case .settings: SettingsView()
+        case .shop: ShopView()
+        case .style: StyleView()
         default: EmptyView()
         }
     }
@@ -332,7 +334,7 @@ private enum AccountScreen: String, Identifiable {
 
     /// The screens that exist in the app so far; the others still say
     /// "browser-only".
-    static let built: Set<AccountScreen> = [.stats, .settings]
+    static let built: Set<AccountScreen> = [.stats, .settings, .shop, .style]
 }
 
 // MARK: - Density

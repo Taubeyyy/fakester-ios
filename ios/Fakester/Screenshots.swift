@@ -40,7 +40,16 @@ enum ScreenshotScene {
         }
     }
 
+    /// Shop and Style need `/profile`, which a screenshot run has no account
+    /// for: the scenes use the test account's real profile (captured
+    /// 2026-10-09: nothing bought yet, level 1), the catalog itself is public.
+    static var sampleWardrobe: Wardrobe? {
+        guard sceneName == "shop" || sceneName == "style" else { return nil }
+        return try? JSONDecoder().decode(Wardrobe.self, from: Data(Capture.profile.utf8))
+    }
+
     private enum Capture {
+        static let profile: String = #"{"user":{"id":80,"username":"Claude","xp":0,"spots":100,"gold_spots":0,"games_played":0,"wins":0,"highscore":0,"correct_answers":0,"is_pro":false,"season_pass_tier":0,"season_pass_id":null,"is_admin":false,"equipped_title_id":1,"equipped_icon_id":1,"equipped_color_id":null,"equipped_background_id":"default","equipped_accent_color_id":1,"equipped_emoji":null,"avatar_url":null,"equipped_name_effect":null,"unlock_all":false,"saved_playlists":[]},"ownedItems":[],"history":[],"friends":[]}"#
         static let me: String = "guest-1791131740573-ope1d"
         static let answer: Answer = Answer(title: "Scared to Be Lonely", artist: "Meghan Trainor", year: "1979")
         static let lobby: String = #"{"type":"lobby-update","payload":{"pin":"2684","hostId":"guest-1791131740573-ope1d","banner":"none","gameState":"LOBBY","players":[{"id":"guest-1791131740573-ope1d","nickname":"Gast9694","score":0,"lives":3,"isEliminated":false,"correctAnswers":0,"bestStreak":0,"isConnected":true,"lastPointsBreakdown":null,"avatarUrl":null,"iconId":1,"colorId":null,"nameEffect":null,"titleId":1,"backgroundId":null,"accentColorId":1,"watchOnly":false,"isReady":false,"isPro":false,"isAdmin":false,"showAdminBadge":true,"showProBadge":true,"emoji":null,"isBot":false,"isGuest":true}],"gameMode":"quiz","isPublic":false,"lobbyLang":null,"lobbyGenre":null,"settings":{"songCount":5,"guessTime":20,"answerType":"multiple","lives":3,"gameType":"points","survivalType":"lives","raceTarget":1000,"guessTypes":["title","artist","year"],"playlistName":"Featured","playlistId":"2Jc0amXy2IvLyTofJKgiYg","showCover":true,"boxMode":false,"hostPlays":true,"sneakyMode":false,"revealTime":5,"speedBonus":true,"streakBonus":true,"playlists":[{"id":"2Jc0amXy2IvLyTofJKgiYg","source":"spotify","name":"Featured","weight":10}]}}}"#

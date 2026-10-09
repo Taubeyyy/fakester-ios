@@ -137,6 +137,11 @@ struct SettingsView: View {
                                 tint: Palette.subdued, trailing: "chevron.right") {
                     if let url = URL(string: "https://fakester.app/") { UIApplication.shared.open(url) }
                 }
+                Text("Item icons: Font Awesome Free 6 by Fonticons, Inc. (CC BY 4.0, fontawesome.com).")
+                    .font(.system(size: 10))
+                    .foregroundColor(Palette.faint)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 2)
             }
         }
     }
